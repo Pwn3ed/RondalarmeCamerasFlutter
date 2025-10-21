@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CameraProvider()),
       ],
       child: MaterialApp(
-        title: 'RondAlarme Câmeras',
+        title: 'Rondalarme Câmeras',
         theme: AppTheme.lightTheme,
         home: const CamerasListScreen(),
         debugShowCheckedModeBanner: false,
