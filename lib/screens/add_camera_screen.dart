@@ -119,10 +119,18 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor, insira o IP do servidor';
+                          final ip = value?.trim() ?? '';
+                          final port = _serverPortController.text.trim();
+
+                          // Both empty -> optional
+                          if (ip.isEmpty && port.isEmpty) return null;
+
+                          // If port provided but ip missing, require ip
+                          if (ip.isEmpty && port.isNotEmpty) {
+                            return 'Informe o IP do servidor ou limpe a porta';
                           }
-                          if (!_isValidIp(value.trim())) {
+
+                          if (!_isValidIp(ip)) {
                             return 'Por favor, insira um IP válido';
                           }
                           return null;
@@ -138,10 +146,18 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor, insira a porta do servidor';
+                          final portText = value?.trim() ?? '';
+                          final ip = _serverIpController.text.trim();
+
+                          // Both empty -> optional
+                          if (portText.isEmpty && ip.isEmpty) return null;
+
+                          // If ip provided but port missing, require port
+                          if (portText.isEmpty && ip.isNotEmpty) {
+                            return 'Informe a porta do servidor ou limpe o IP';
                           }
-                          final port = int.tryParse(value.trim());
+
+                          final port = int.tryParse(portText);
                           if (port == null || port < 1 || port > 65535) {
                             return 'Por favor, insira uma porta válida (1-65535)';
                           }
@@ -160,8 +176,10 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Por favor, insira o caminho do stream';
                           }
-                          if (!value.trim().startsWith('/')) {
-                            return 'O caminho deve começar com /';
+                          final v = value.trim();
+                          // Allow either a path starting with / or a full http(s) URL
+                          if (!(v.startsWith('/') || v.startsWith('http://') || v.startsWith('https://'))) {
+                            return 'O caminho deve começar com / ou ser uma URL completa (http/https)';
                           }
                           return null;
                         },
@@ -203,18 +221,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                       ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _isLoading ? null : () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryGreen,
-                  side: const BorderSide(color: AppTheme.primaryGreen),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
             ],
           ),
         ),
@@ -225,7 +231,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   bool _isValidIp(String ip) {
     final parts = ip.split('.');
     if (parts.length != 4) return false;
-    
+
     for (final part in parts) {
       final num = int.tryParse(part);
       if (num == null || num < 0 || num > 255) return false;
@@ -234,19 +240,37 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   }
 
   Future<void> _testStreamUrl() async {
-    if (_serverIpController.text.trim().isEmpty || 
-        _serverPortController.text.trim().isEmpty ||
-        _streamPathController.text.trim().isEmpty) {
+    final streamText = _streamPathController.text.trim();
+
+    if (streamText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Preencha IP, porta e caminho antes de testar'),
+          content: Text('Preencha o caminho do stream antes de testar'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    final testUrl = 'http://${_serverIpController.text.trim()}:${_serverPortController.text.trim()}${_streamPathController.text.trim()}';
+    String testUrl;
+    if (streamText.startsWith('http://') || streamText.startsWith('https://')) {
+      testUrl = streamText;
+    } else {
+      final ip = _serverIpController.text.trim();
+      final port = _serverPortController.text.trim();
+
+      if (ip.isEmpty || port.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Se o caminho não for uma URL, preencha IP e porta antes de testar'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      testUrl = 'http://$ip:$port${streamText}';
+    }
     
     showDialog(
       context: context,
@@ -321,8 +345,8 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
       await context.read<CameraProvider>().addCamera(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        serverIp: _serverIpController.text.trim(),
-        serverPort: int.parse(_serverPortController.text.trim()),
+        serverIp: _serverIpController.text.trim().isEmpty ? null : _serverIpController.text.trim(),
+        serverPort: _serverPortController.text.trim().isEmpty ? null : int.parse(_serverPortController.text.trim()),
         streamPath: _streamPathController.text.trim(),
       );
 

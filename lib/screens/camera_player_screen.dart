@@ -280,7 +280,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       ),
     );
   }
-
+  
   Widget _buildCameraInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -298,7 +298,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           const SizedBox(height: 12),
           _buildInfoRow('Nome', widget.camera.name),
           _buildInfoRow('Descrição', widget.camera.description),
-          _buildInfoRow('Servidor', '${widget.camera.serverIp}:${widget.camera.serverPort}'),
+        _buildInfoRow('Servidor', widget.camera.serverIp != null && widget.camera.serverPort != null ? '${widget.camera.serverIp}:${widget.camera.serverPort}' : '—'),
           _buildInfoRow('Caminho', widget.camera.streamPath),
           _buildInfoRow('Stream URL', widget.camera.streamUrl),
           _buildInfoRow('Status', widget.camera.isActive ? 'Ativa' : 'Inativa'),

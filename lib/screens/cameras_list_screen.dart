@@ -167,10 +167,17 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                     color: AppTheme.lightGrey,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${camera.serverIp}:${camera.serverPort}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.lightGrey,
+                  Expanded(
+                    child: Text(
+                      camera.serverIp != null && camera.serverPort != null
+                          ? '${camera.serverIp}:${camera.serverPort}'
+                          : camera.streamUrl,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.lightGrey,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: false,
                     ),
                   ),
                 ],

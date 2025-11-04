@@ -29,8 +29,8 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     // Inicializar controllers com os dados da câmera
     _nameController = TextEditingController(text: widget.camera.name);
     _descriptionController = TextEditingController(text: widget.camera.description);
-    _serverIpController = TextEditingController(text: widget.camera.serverIp);
-    _serverPortController = TextEditingController(text: widget.camera.serverPort.toString());
+    _serverIpController = TextEditingController(text: widget.camera.serverIp ?? '');
+    _serverPortController = TextEditingController(text: widget.camera.serverPort?.toString() ?? '');
     _streamPathController = TextEditingController(text: widget.camera.streamPath);
   }
 
@@ -125,12 +125,12 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor, insira o IP do servidor';
-                          }
-                          if (!_isValidIp(value.trim())) {
-                            return 'Por favor, insira um IP válido';
-                          }
+                          final ip = value?.trim() ?? '';
+                          final port = _serverPortController.text.trim();
+
+                          if (ip.isEmpty && port.isEmpty) return null;
+                          if (ip.isEmpty && port.isNotEmpty) return 'Informe o IP do servidor ou limpe a porta';
+                          if (!_isValidIp(ip)) return 'Por favor, insira um IP válido';
                           return null;
                         },
                       ),
@@ -144,13 +144,13 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor, insira a porta do servidor';
-                          }
-                          final port = int.tryParse(value.trim());
-                          if (port == null || port < 1 || port > 65535) {
-                            return 'Por favor, insira uma porta válida (1-65535)';
-                          }
+                          final portText = value?.trim() ?? '';
+                          final ip = _serverIpController.text.trim();
+
+                          if (portText.isEmpty && ip.isEmpty) return null;
+                          if (portText.isEmpty && ip.isNotEmpty) return 'Informe a porta do servidor ou limpe o IP';
+                          final port = int.tryParse(portText);
+                          if (port == null || port < 1 || port > 65535) return 'Por favor, insira uma porta válida (1-65535)';
                           return null;
                         },
                       ),
@@ -166,8 +166,9 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Por favor, insira o caminho do stream';
                           }
-                          if (!value.trim().startsWith('/')) {
-                            return 'O caminho deve começar com /';
+                          final v = value.trim();
+                          if (!(v.startsWith('/') || v.startsWith('http://') || v.startsWith('https://'))) {
+                            return 'O caminho deve começar com / ou ser uma URL completa (http/https)';
                           }
                           return null;
                         },
@@ -382,8 +383,8 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
       final updatedCamera = widget.camera.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        serverIp: _serverIpController.text.trim(),
-        serverPort: int.parse(_serverPortController.text.trim()),
+        serverIp: _serverIpController.text.trim().isEmpty ? null : _serverIpController.text.trim(),
+        serverPort: _serverPortController.text.trim().isEmpty ? null : int.parse(_serverPortController.text.trim()),
         streamPath: _streamPathController.text.trim(),
       );
 

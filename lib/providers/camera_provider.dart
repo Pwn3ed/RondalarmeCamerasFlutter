@@ -27,8 +27,8 @@ class CameraProvider with ChangeNotifier {
   Future<void> addCamera({
     required String name,
     required String description,
-    required String serverIp,
-    required int serverPort,
+    String? serverIp,
+    int? serverPort,
     required String streamPath,
   }) async {
     try {
