@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Cores principais
   static const Color primaryGreen = Color(0xFF2E7D32);
   static const Color lightGreen = Color(0xFF4CAF50);
   static const Color darkGreen = Color(0xFF1B5E20);
@@ -25,14 +24,11 @@ class AppTheme {
         primary: primaryGreen,
         secondary: lightGreen,
         surface: primaryWhite,
-        background: offWhite,
         onPrimary: primaryWhite,
         onSecondary: primaryWhite,
         onSurface: primaryBlack,
-        onBackground: primaryBlack,
       ),
-      
-      // AppBar Theme
+
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryGreen,
         foregroundColor: primaryWhite,
@@ -44,8 +40,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
       ),
-      
-      // Card Theme
+
       cardTheme: CardThemeData(
         color: primaryWhite,
         elevation: 2,
@@ -54,8 +49,7 @@ class AppTheme {
         ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-      
-      // Elevated Button Theme
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGreen,
@@ -67,15 +61,13 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
-      
-      // Floating Action Button Theme
+
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: lightGreen,
         foregroundColor: primaryWhite,
         elevation: 4,
       ),
-      
-      // Input Decoration Theme
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: lightGreyWhite,
@@ -97,8 +89,7 @@ class AppTheme {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
-      
-      // Text Theme
+
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
           color: primaryBlack,
@@ -134,8 +125,7 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
-      
-      // Scaffold Theme
+
       scaffoldBackgroundColor: offWhite,
     );
   }

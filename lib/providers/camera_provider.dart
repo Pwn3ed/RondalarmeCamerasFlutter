@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/camera.dart';
-import '../services/camera_service.dart';
+import '../services/camera_firestore_service.dart';
 
 class CameraProvider with ChangeNotifier {
-  final CameraService _cameraService = CameraService();
+  final CameraFirestoreService _cameraService = CameraFirestoreService();
   List<Camera> _cameras = [];
   bool _isLoading = false;
 
@@ -17,7 +17,7 @@ class CameraProvider with ChangeNotifier {
     try {
       _cameras = await _cameraService.getAllCameras();
     } catch (e) {
-      debugPrint('Erro ao carregar câmeras: $e');
+      _cameras = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -30,6 +30,7 @@ class CameraProvider with ChangeNotifier {
     String? serverIp,
     int? serverPort,
     required String streamPath,
+    required bool isManualMode,
   }) async {
     try {
       final camera = await _cameraService.addCamera(
@@ -38,12 +39,12 @@ class CameraProvider with ChangeNotifier {
         serverIp: serverIp,
         serverPort: serverPort,
         streamPath: streamPath,
+        isManualMode: isManualMode,
       );
       
       _cameras.add(camera);
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao adicionar câmera: $e');
       rethrow;
     }
   }
@@ -58,7 +59,6 @@ class CameraProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Erro ao atualizar câmera: $e');
       rethrow;
     }
   }
@@ -69,7 +69,6 @@ class CameraProvider with ChangeNotifier {
       _cameras.removeWhere((camera) => camera.id == id);
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao deletar câmera: $e');
       rethrow;
     }
   }
@@ -86,16 +85,23 @@ class CameraProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Erro ao alternar status da câmera: $e');
       rethrow;
     }
   }
-
   Camera? getCameraById(String id) {
     try {
       return _cameras.firstWhere((camera) => camera.id == id);
     } catch (e) {
       return null;
     }
+  }
+
+  Stream<List<Camera>> watchCameras() {
+    return _cameraService.camerasStream();
+  }
+  Future<void> clearCache() async {
+    await _cameraService.clearCache();
+    _cameras = [];
+    notifyListeners();
   }
 }

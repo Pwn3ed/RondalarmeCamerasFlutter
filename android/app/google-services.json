@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "58254269090",
+    "project_id": "rondalarmecamerasflutter",
+    "storage_bucket": "rondalarmecamerasflutter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58254269090:android:652eccbc4c37e1c5ce55fb",
+        "android_client_info": {
+          "package_name": "com.example.rondalarme_cameras_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj0i6LMdgp6XiTy6OjZjZC_2iWWivr9Do"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

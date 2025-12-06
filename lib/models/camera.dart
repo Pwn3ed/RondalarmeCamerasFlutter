@@ -6,6 +6,7 @@ class Camera {
   final int? serverPort;
   final String streamPath;
   final bool isActive;
+  final bool isManualMode;
   final DateTime createdAt;
 
   Camera({
@@ -16,24 +17,20 @@ class Camera {
     this.serverPort,
     required this.streamPath,
     this.isActive = true,
+    this.isManualMode = false,
     required this.createdAt,
   });
 
   String get streamUrl {
     final path = streamPath.trim();
-
-    // If the streamPath is already a full URL, return it directly
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (isManualMode) {
       return path;
     }
-
-    // If we have server info, build the URL
-    if (serverIp != null && serverPort != null) {
-      final prefix = path.startsWith('/') ? '' : '/';
-      return 'http://${serverIp}:${serverPort}$prefix$path';
+    if (serverIp != null && serverPort != null && path.isNotEmpty) {
+      final server = serverIp!.trim();
+      final cleanPath = path.startsWith('/') ? path : '/$path';
+      return 'http://$server:$serverPort$cleanPath/video1_stream.m3u8';
     }
-
-    // Fallback: return the path as-is
     return path;
   }
 
@@ -46,6 +43,7 @@ class Camera {
       'serverPort': serverPort,
       'streamPath': streamPath,
       'isActive': isActive,
+      'isManualMode': isManualMode,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -59,6 +57,7 @@ class Camera {
       serverPort: json['serverPort'] is int ? json['serverPort'] : (json['serverPort'] != null ? int.tryParse(json['serverPort'].toString()) : null),
       streamPath: json['streamPath'],
       isActive: json['isActive'] ?? true,
+      isManualMode: json['isManualMode'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -71,6 +70,7 @@ class Camera {
     int? serverPort,
     String? streamPath,
     bool? isActive,
+    bool? isManualMode,
     DateTime? createdAt,
   }) {
     return Camera(
@@ -81,6 +81,7 @@ class Camera {
       serverPort: serverPort ?? this.serverPort,
       streamPath: streamPath ?? this.streamPath,
       isActive: isActive ?? this.isActive,
+      isManualMode: isManualMode ?? this.isManualMode,
       createdAt: createdAt ?? this.createdAt,
     );
   }

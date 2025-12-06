@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import '../models/camera.dart';
 import '../theme/app_theme.dart';
@@ -18,6 +20,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
   bool _isInitialized = false;
   bool _isPlaying = false;
   bool _isLoading = true;
+  bool _isFullscreen = false;
+  bool _showControls = true;
   String? _errorMessage;
 
   @override
@@ -28,6 +32,10 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _controller?.dispose();
     super.dispose();
   }
@@ -44,19 +52,15 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       );
 
       await _controller!.initialize();
-      
-      // Configurar para loop contínuo
+      if (!mounted) return;
       _controller!.setLooping(true);
-      
-      // Configurar volume
       _controller!.setVolume(1.0);
 
+      if (!mounted) return;
       setState(() {
         _isInitialized = true;
         _isLoading = false;
       });
-
-      // Iniciar reprodução automaticamente
       _play();
     } catch (e) {
       String errorMsg = 'Erro ao conectar com a câmera';
@@ -70,7 +74,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       } else {
         errorMsg = 'Erro: $e';
       }
-      
+      if (!mounted) return;
       setState(() {
         _errorMessage = errorMsg;
         _isLoading = false;
@@ -101,10 +105,29 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     _initializePlayer();
   }
 
+  void _toggleFullscreen() {
+    setState(() {
+      _isFullscreen = !_isFullscreen;
+    });
+
+    if (_isFullscreen) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: _isFullscreen ? null : AppBar(
         title: Text(widget.camera.name),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
@@ -117,8 +140,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                   builder: (context) => EditCameraScreen(camera: widget.camera),
                 ),
               );
-              
-              if (result == true && mounted) {
+              if (!context.mounted) return;
+              if (result == true) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Câmera atualizada com sucesso!'),
@@ -142,8 +165,11 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           Expanded(
             child: _buildVideoPlayer(),
           ),
-          _buildControls(),
-          _buildCameraInfo(),
+          if (!_isFullscreen) ...[
+            _buildControls(),
+            _buildCameraInfo(),
+          ] else if (_showControls)
+            _buildControls(),
         ],
       ),
     );
@@ -237,10 +263,19 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
 
     return Container(
       color: AppTheme.primaryBlack,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: _controller!.value.aspectRatio,
-          child: VideoPlayer(_controller!),
+      child: GestureDetector(
+        onTap: () {
+          if (_isFullscreen) {
+            setState(() {
+              _showControls = !_showControls;
+            });
+          }
+        },
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: _controller!.value.aspectRatio,
+            child: VideoPlayer(_controller!),
+          ),
         ),
       ),
     );
@@ -275,6 +310,16 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               color: AppTheme.primaryWhite,
             ),
             tooltip: 'Recarregar',
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _toggleFullscreen,
+            icon: Icon(
+              _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+              size: 24,
+              color: AppTheme.primaryWhite,
+            ),
+            tooltip: _isFullscreen ? 'Sair da tela cheia' : 'Tela cheia',
           ),
         ],
       ),

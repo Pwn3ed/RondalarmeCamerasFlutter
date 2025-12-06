@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/camera_provider.dart';
 import '../models/camera.dart';
+import '../providers/camera_provider.dart';
 import '../theme/app_theme.dart';
 
 class EditCameraScreen extends StatefulWidget {
@@ -20,18 +20,23 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
   late final TextEditingController _serverIpController;
   late final TextEditingController _serverPortController;
   late final TextEditingController _streamPathController;
-  
+  late final TextEditingController _manualUrlController;
+
   bool _isLoading = false;
+  late bool _isManualMode;
 
   @override
   void initState() {
     super.initState();
-    // Inicializar controllers com os dados da câmera
     _nameController = TextEditingController(text: widget.camera.name);
     _descriptionController = TextEditingController(text: widget.camera.description);
     _serverIpController = TextEditingController(text: widget.camera.serverIp ?? '');
     _serverPortController = TextEditingController(text: widget.camera.serverPort?.toString() ?? '');
     _streamPathController = TextEditingController(text: widget.camera.streamPath);
+    _manualUrlController = TextEditingController(
+      text: widget.camera.isManualMode ? widget.camera.streamPath : '',
+    );
+    _isManualMode = widget.camera.isManualMode;
   }
 
   @override
@@ -41,6 +46,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     _serverIpController.dispose();
     _serverPortController.dispose();
     _streamPathController.dispose();
+    _manualUrlController.dispose();
     super.dispose();
   }
 
@@ -109,80 +115,138 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Configurações do Servidor',
+                        'Configuração da URL',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppTheme.primaryGreen,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _serverIpController,
-                        decoration: const InputDecoration(
-                          labelText: 'IP do Servidor *',
-                          hintText: 'Ex: 192.168.1.100',
-                          prefixIcon: Icon(Icons.computer),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          final ip = value?.trim() ?? '';
-                          final port = _serverPortController.text.trim();
-
-                          if (ip.isEmpty && port.isEmpty) return null;
-                          if (ip.isEmpty && port.isNotEmpty) return 'Informe o IP do servidor ou limpe a porta';
-                          if (!_isValidIp(ip)) return 'Por favor, insira um IP válido';
-                          return null;
-                        },
+                      Row(
+                        children: [
+                          Text(
+                            'Modo:',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            _isManualMode ? 'Manual' : 'Automático',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppTheme.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: _isManualMode,
+                            onChanged: (value) {
+                              setState(() {
+                                _isManualMode = value;
+                              });
+                            },
+                            thumbColor: const WidgetStatePropertyAll(AppTheme.primaryGreen),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _serverPortController,
-                        decoration: const InputDecoration(
-                          labelText: 'Porta do Servidor *',
-                          hintText: 'Ex: 8080',
-                          prefixIcon: Icon(Icons.settings_ethernet),
+                      if (!_isManualMode) ...[
+                        Text(
+                          'Preencha os campos abaixo para gerar a URL automaticamente:',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.darkGrey,
+                          ),
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          final portText = value?.trim() ?? '';
-                          final ip = _serverIpController.text.trim();
-
-                          if (portText.isEmpty && ip.isEmpty) return null;
-                          if (portText.isEmpty && ip.isNotEmpty) return 'Informe a porta do servidor ou limpe o IP';
-                          final port = int.tryParse(portText);
-                          if (port == null || port < 1 || port > 65535) return 'Por favor, insira uma porta válida (1-65535)';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _streamPathController,
-                        decoration: const InputDecoration(
-                          labelText: 'Caminho do Stream *',
-                          hintText: 'Ex: /live/stream.m3u8',
-                          prefixIcon: Icon(Icons.link),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _serverIpController,
+                          decoration: const InputDecoration(
+                            labelText: 'Servidor (DDNS/IP) *',
+                            hintText: 'rondagprs.ddns.net',
+                            prefixIcon: Icon(Icons.dns),
+                          ),
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          validator: (value) {
+                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
+                              return 'Informe o servidor';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor, insira o caminho do stream';
-                          }
-                          final v = value.trim();
-                          if (!(v.startsWith('/') || v.startsWith('http://') || v.startsWith('https://'))) {
-                            return 'O caminho deve começar com / ou ser uma URL completa (http/https)';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _testStreamUrl,
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Testar Stream'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.lightGreen,
-                          foregroundColor: AppTheme.primaryWhite,
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _serverPortController,
+                          decoration: const InputDecoration(
+                            labelText: 'Porta *',
+                            hintText: '8888',
+                            prefixIcon: Icon(Icons.settings_ethernet),
+                          ),
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (!_isManualMode) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Informe a porta';
+                              }
+                              final port = int.tryParse(value.trim());
+                              if (port == null || port < 1 || port > 65535) {
+                                return 'Porta inválida (1-65535)';
+                              }
+                            }
+                            return null;
+                          },
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _streamPathController,
+                          decoration: const InputDecoration(
+                            labelText: 'Caminho *',
+                            hintText: 'app/deni',
+                            prefixIcon: Icon(Icons.folder),
+                          ),
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          validator: (value) {
+                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
+                              return 'Informe o caminho';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      if (_isManualMode) ...[
+                        Text(
+                          'Digite a URL completa do stream:',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.darkGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _manualUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'URL Completa *',
+                            hintText: 'http://servidor.com:8888/stream.m3u8',
+                            prefixIcon: Icon(Icons.link),
+                          ),
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          maxLines: 2,
+                          validator: (value) {
+                            if (_isManualMode) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Digite a URL completa';
+                              }
+                              if (!value.trim().startsWith('http://') &&
+                                  !value.trim().startsWith('https://')) {
+                                return 'URL deve começar com http:// ou https://';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -284,92 +348,6 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} às ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  bool _isValidIp(String ip) {
-    final parts = ip.split('.');
-    if (parts.length != 4) return false;
-    
-    for (final part in parts) {
-      final num = int.tryParse(part);
-      if (num == null || num < 0 || num > 255) return false;
-    }
-    return true;
-  }
-
-  Future<void> _testStreamUrl() async {
-    if (_serverIpController.text.trim().isEmpty || 
-        _serverPortController.text.trim().isEmpty ||
-        _streamPathController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha IP, porta e caminho antes de testar'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final testUrl = 'http://${_serverIpController.text.trim()}:${_serverPortController.text.trim()}${_streamPathController.text.trim()}';
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Testando Stream'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text('Testando: $testUrl'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      final response = await Future.delayed(const Duration(seconds: 3));
-      
-      if (mounted) {
-        Navigator.pop(context); // Fecha o dialog de loading
-        
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Teste de Stream'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('URL testada: $testUrl'),
-                const SizedBox(height: 16),
-                const Text(
-                  'Para testar completamente, salve a câmera e tente reproduzir no player.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Fecha o dialog de loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao testar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _updateCamera() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -380,13 +358,27 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     });
 
     try {
-      final updatedCamera = widget.camera.copyWith(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        serverIp: _serverIpController.text.trim().isEmpty ? null : _serverIpController.text.trim(),
-        serverPort: _serverPortController.text.trim().isEmpty ? null : int.parse(_serverPortController.text.trim()),
-        streamPath: _streamPathController.text.trim(),
-      );
+      late Camera updatedCamera;
+
+      if (_isManualMode) {
+        updatedCamera = widget.camera.copyWith(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          serverIp: null,
+          serverPort: null,
+          streamPath: _manualUrlController.text.trim(),
+          isManualMode: true,
+        );
+      } else {
+        updatedCamera = widget.camera.copyWith(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          serverIp: _serverIpController.text.trim(),
+          serverPort: int.parse(_serverPortController.text.trim()),
+          streamPath: _streamPathController.text.trim(),
+          isManualMode: false,
+        );
+      }
 
       await context.read<CameraProvider>().updateCamera(updatedCamera);
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/camera.dart';
 import '../theme/app_theme.dart';
 import 'add_camera_screen.dart';
@@ -30,6 +31,38 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
         title: const Text('Câmeras de Segurança'),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Sair'),
+                  content: const Text('Deseja realmente sair?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text('Sair'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (!context.mounted) return;
+              if (confirm == true) {
+                final cameraProvider = context.read<CameraProvider>();
+                final authProvider = context.read<AuthProvider>();
+                await authProvider.signOut(cameraProvider);
+              }
+            },
+            tooltip: 'Sair',
+          ),
+        ],
       ),
       body: Consumer<CameraProvider>(
         builder: (context, cameraProvider, child) {
@@ -91,16 +124,14 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
               builder: (context) => const AddCameraScreen(),
             ),
           );
-          
+          if (!context.mounted) return;
           if (result == true) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Câmera adicionada com sucesso!'),
-                  backgroundColor: AppTheme.lightGreen,
-                ),
-              );
-            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Câmera adicionada com sucesso!'),
+                backgroundColor: AppTheme.lightGreen,
+              ),
+            );
           }
         },
         backgroundColor: AppTheme.lightGreen,
@@ -127,34 +158,21 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          camera.name,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          camera.description,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.lightGrey,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    camera.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Switch(
-                    value: camera.isActive,
-                    onChanged: (value) {
-                      cameraProvider.toggleCameraStatus(camera.id);
-                    },
-                    activeColor: AppTheme.lightGreen,
+                  const SizedBox(height: 4),
+                  Text(
+                    camera.description,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.lightGrey,
+                    ),
                   ),
                 ],
               ),
@@ -235,8 +253,8 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                                builder: (context) => EditCameraScreen(camera: camera),
                              ),
                            );
-                           
-                           if (result == true && mounted) {
+                           if (!context.mounted) return;
+                           if (result == true) {
                              ScaffoldMessenger.of(context).showSnackBar(
                                const SnackBar(
                                  content: Text('Câmera atualizada com sucesso!'),
@@ -273,37 +291,35 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
   void _showDeleteDialog(BuildContext context, Camera camera, CameraProvider cameraProvider) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Excluir Câmera'),
           content: Text('Tem certeza que deseja excluir a câmera "${camera.name}"?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
                 try {
                   await cameraProvider.deleteCamera(camera.id);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Câmera excluída com sucesso!'),
-                        backgroundColor: AppTheme.lightGreen,
-                      ),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Câmera excluída com sucesso!'),
+                      backgroundColor: AppTheme.lightGreen,
+                    ),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Erro ao excluir câmera'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Erro ao excluir câmera'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               child: const Text('Excluir', style: TextStyle(color: Colors.red)),

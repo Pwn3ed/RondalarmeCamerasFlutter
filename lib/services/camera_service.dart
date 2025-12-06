@@ -22,6 +22,7 @@ class CameraService {
     String? serverIp,
     int? serverPort,
     required String streamPath,
+    required bool isManualMode,
   }) async {
     final camera = Camera(
       id: _uuid.v4(),
@@ -30,10 +31,10 @@ class CameraService {
       serverIp: serverIp,
       serverPort: serverPort,
       streamPath: streamPath,
+      isManualMode: isManualMode,
       createdAt: DateTime.now(),
     );
 
-    final prefs = await SharedPreferences.getInstance();
     final cameras = await getAllCameras();
     cameras.add(camera);
     
