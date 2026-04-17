@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import '../models/camera.dart';
@@ -17,17 +16,31 @@ class CameraPlayerScreen extends StatefulWidget {
 
 class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
   VideoPlayerController? _controller;
+  TransformationController? _transformationController;
   bool _isInitialized = false;
   bool _isPlaying = false;
   bool _isLoading = true;
   bool _isFullscreen = false;
   bool _showControls = true;
+  bool _isZoomed = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _transformationController = TransformationController();
+    _transformationController!.addListener(_onTransformationChanged);
     _initializePlayer();
+  }
+
+  void _onTransformationChanged() {
+    final scale = _transformationController!.value.getMaxScaleOnAxis();
+    final isZoomed = scale > 1.0;
+    if (isZoomed != _isZoomed) {
+      setState(() {
+        _isZoomed = isZoomed;
+      });
+    }
   }
 
   @override
@@ -36,6 +49,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       DeviceOrientation.portraitUp,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _transformationController?.removeListener(_onTransformationChanged);
+    _transformationController?.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -122,6 +137,10 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       ]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
+  }
+
+  void _resetZoom() {
+    _transformationController?.value = Matrix4.identity();
   }
 
   @override
@@ -271,10 +290,17 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
             });
           }
         },
-        child: Center(
-          child: AspectRatio(
-            aspectRatio: _controller!.value.aspectRatio,
-            child: VideoPlayer(_controller!),
+        child: InteractiveViewer(
+          transformationController: _transformationController,
+          minScale: 1.0,
+          maxScale: 4.0,
+          panEnabled: true,
+          scaleEnabled: true,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: VideoPlayer(_controller!),
+            ),
           ),
         ),
       ),
@@ -310,6 +336,16 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               color: AppTheme.primaryWhite,
             ),
             tooltip: 'Recarregar',
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _isZoomed ? _resetZoom : null,
+            icon: Icon(
+              Icons.zoom_out_map,
+              size: 24,
+              color: _isZoomed ? AppTheme.primaryWhite : AppTheme.lightGrey,
+            ),
+            tooltip: 'Resetar Zoom',
           ),
           const SizedBox(width: 16),
           IconButton(
