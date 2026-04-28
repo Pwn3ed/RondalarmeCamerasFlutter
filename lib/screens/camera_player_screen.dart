@@ -7,8 +7,14 @@ import 'edit_camera_screen.dart';
 
 class CameraPlayerScreen extends StatefulWidget {
   final Camera camera;
+  /// Se falso, não exibe edição (ex.: câmera de outro usuário na lista pública).
+  final bool canEdit;
 
-  const CameraPlayerScreen({super.key, required this.camera});
+  const CameraPlayerScreen({
+    super.key,
+    required this.camera,
+    this.canEdit = true,
+  });
 
   @override
   State<CameraPlayerScreen> createState() => _CameraPlayerScreenState();
@@ -151,27 +157,28 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
-          IconButton(
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditCameraScreen(camera: widget.camera),
-                ),
-              );
-              if (!context.mounted) return;
-              if (result == true) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Câmera atualizada com sucesso!'),
-                    backgroundColor: AppTheme.lightGreen,
+          if (widget.canEdit)
+            IconButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditCameraScreen(camera: widget.camera),
                   ),
                 );
-              }
-            },
-            icon: const Icon(Icons.edit),
-            tooltip: 'Editar Câmera',
-          ),
+                if (!context.mounted) return;
+                if (result == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Câmera atualizada com sucesso!'),
+                      backgroundColor: AppTheme.lightGreen,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.edit),
+              tooltip: 'Editar Câmera',
+            ),
           IconButton(
             onPressed: _reload,
             icon: const Icon(Icons.refresh),
@@ -383,6 +390,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           _buildInfoRow('Caminho', widget.camera.streamPath),
           _buildInfoRow('Stream URL', widget.camera.streamUrl),
           _buildInfoRow('Status', widget.camera.isActive ? 'Ativa' : 'Inativa'),
+          if (widget.camera.isPublic)
+            _buildInfoRow('Visibilidade', 'Pública'),
         ],
       ),
     );

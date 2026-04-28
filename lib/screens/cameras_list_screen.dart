@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import 'add_camera_screen.dart';
 import 'edit_camera_screen.dart';
 import 'camera_player_screen.dart';
+import 'public_cameras_screen.dart';
 
 class CamerasListScreen extends StatefulWidget {
   const CamerasListScreen({super.key});
@@ -32,6 +33,18 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.public),
+            tooltip: 'Câmeras públicas',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PublicCamerasScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -161,11 +174,35 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    camera.name,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          camera.name,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                      if (camera.isPublic) ...[
+                        const SizedBox(width: 8),
+                        Chip(
+                          label: Text(
+                            'Pública',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: AppTheme.darkGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor: AppTheme.softGreen,
+                          side: BorderSide.none,
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(

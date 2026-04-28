@@ -32,6 +32,7 @@ class CameraService {
       serverPort: serverPort,
       streamPath: streamPath,
       isManualMode: isManualMode,
+      isPublic: false,
       createdAt: DateTime.now(),
     );
 

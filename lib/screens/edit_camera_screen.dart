@@ -24,6 +24,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
 
   bool _isLoading = false;
   late bool _isManualMode;
+  late bool _isPublic;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
       text: widget.camera.isManualMode ? widget.camera.streamPath : '',
     );
     _isManualMode = widget.camera.isManualMode;
+    _isPublic = widget.camera.isPublic;
   }
 
   @override
@@ -259,6 +261,38 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
+                        'Visibilidade',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppTheme.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Câmera pública'),
+                        subtitle: Text(
+                          'Outros usuários podem ver esta câmera em Câmeras públicas.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.darkGrey,
+                              ),
+                        ),
+                        value: _isPublic,
+                        onChanged: (v) => setState(() => _isPublic = v),
+                        activeThumbColor: AppTheme.primaryGreen,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         'Informações do Sistema',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppTheme.primaryGreen,
@@ -368,6 +402,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
           serverPort: null,
           streamPath: _manualUrlController.text.trim(),
           isManualMode: true,
+          isPublic: _isPublic,
         );
       } else {
         updatedCamera = widget.camera.copyWith(
@@ -377,6 +412,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
           serverPort: int.parse(_serverPortController.text.trim()),
           streamPath: _streamPathController.text.trim(),
           isManualMode: false,
+          isPublic: _isPublic,
         );
       }
 

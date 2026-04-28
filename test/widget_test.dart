@@ -1,30 +1,41 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:rondalarme_cameras_flutter/main.dart';
+import 'package:rondalarme_cameras_flutter/models/camera.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('Camera toJson/fromJson preserves isPublic and ownerId', () {
+    final camera = Camera(
+      id: 'cam1',
+      name: 'Entrada',
+      description: 'Porta principal',
+      streamPath: 'http://example.com/stream.m3u8',
+      isManualMode: true,
+      isPublic: true,
+      ownerId: 'user-uid',
+      createdAt: DateTime.utc(2024, 6, 15, 12, 0),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final json = camera.toJson();
+    expect(json['isPublic'], true);
+    expect(json['ownerId'], 'user-uid');
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    final restored = Camera.fromJson(json);
+    expect(restored.id, 'cam1');
+    expect(restored.isPublic, true);
+    expect(restored.ownerId, 'user-uid');
+    expect(restored.isManualMode, true);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('Camera.fromJson defaults isPublic to false when absent', () {
+    final restored = Camera.fromJson({
+      'id': 'x',
+      'name': 'n',
+      'description': '',
+      'streamPath': '/path',
+      'isActive': true,
+      'isManualMode': false,
+      'createdAt': DateTime.utc(2024, 1, 1).toIso8601String(),
+    });
+    expect(restored.isPublic, false);
+    expect(restored.ownerId, isNull);
   });
 }

@@ -7,6 +7,9 @@ class Camera {
   final String streamPath;
   final bool isActive;
   final bool isManualMode;
+  final bool isPublic;
+  /// Dono da câmera (útil em listagens via collectionGroup e regras).
+  final String? ownerId;
   final DateTime createdAt;
 
   Camera({
@@ -18,6 +21,8 @@ class Camera {
     required this.streamPath,
     this.isActive = true,
     this.isManualMode = false,
+    this.isPublic = false,
+    this.ownerId,
     required this.createdAt,
   });
 
@@ -44,21 +49,29 @@ class Camera {
       'streamPath': streamPath,
       'isActive': isActive,
       'isManualMode': isManualMode,
+      'isPublic': isPublic,
+      if (ownerId != null) 'ownerId': ownerId,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
   factory Camera.fromJson(Map<String, dynamic> json) {
     return Camera(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      serverIp: json['serverIp'],
-      serverPort: json['serverPort'] is int ? json['serverPort'] : (json['serverPort'] != null ? int.tryParse(json['serverPort'].toString()) : null),
-      streamPath: json['streamPath'],
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String? ?? '',
+      serverIp: json['serverIp'] as String?,
+      serverPort: json['serverPort'] is int
+          ? json['serverPort'] as int
+          : (json['serverPort'] != null
+              ? int.tryParse(json['serverPort'].toString())
+              : null),
+      streamPath: json['streamPath'] as String,
       isActive: json['isActive'] ?? true,
       isManualMode: json['isManualMode'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
+      isPublic: json['isPublic'] ?? false,
+      ownerId: json['ownerId'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 
@@ -71,6 +84,8 @@ class Camera {
     String? streamPath,
     bool? isActive,
     bool? isManualMode,
+    bool? isPublic,
+    String? ownerId,
     DateTime? createdAt,
   }) {
     return Camera(
@@ -82,6 +97,8 @@ class Camera {
       streamPath: streamPath ?? this.streamPath,
       isActive: isActive ?? this.isActive,
       isManualMode: isManualMode ?? this.isManualMode,
+      isPublic: isPublic ?? this.isPublic,
+      ownerId: ownerId ?? this.ownerId,
       createdAt: createdAt ?? this.createdAt,
     );
   }

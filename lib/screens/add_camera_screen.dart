@@ -21,6 +21,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   
   bool _isLoading = false;
   bool _isManualMode = false;
+  bool _isPublic = false;
 
   @override
   void initState() {
@@ -90,6 +91,20 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                           prefixIcon: Icon(Icons.description),
                         ),
                         maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Tornar câmera pública'),
+                        subtitle: Text(
+                          'Se ativado, outros usuários poderão ver e reproduzir esta câmera em Câmeras públicas.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.darkGrey,
+                              ),
+                        ),
+                        value: _isPublic,
+                        onChanged: (v) => setState(() => _isPublic = v),
+                        activeThumbColor: AppTheme.primaryGreen,
                       ),
                     ],
                   ),
@@ -293,6 +308,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
           serverPort: null,
           streamPath: _manualUrlController.text.trim(),
           isManualMode: true,
+          isPublic: _isPublic,
         );
       } else {
         await context.read<CameraProvider>().addCamera(
@@ -302,6 +318,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
           serverPort: int.parse(_serverPortController.text.trim()),
           streamPath: _streamPathController.text.trim(),
           isManualMode: false,
+          isPublic: _isPublic,
         );
       }
 
