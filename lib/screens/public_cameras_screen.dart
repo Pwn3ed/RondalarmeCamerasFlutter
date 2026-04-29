@@ -7,7 +7,12 @@ import '../theme/app_theme.dart';
 import 'camera_player_screen.dart';
 
 class PublicCamerasScreen extends StatefulWidget {
-  const PublicCamerasScreen({super.key});
+  final bool showAppBar;
+
+  const PublicCamerasScreen({
+    super.key,
+    this.showAppBar = true,
+  });
 
   @override
   State<PublicCamerasScreen> createState() => _PublicCamerasScreenState();
@@ -30,13 +35,7 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Câmeras públicas'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
-      ),
-      body: Consumer<CameraProvider>(
+    final content = Consumer<CameraProvider>(
         builder: (context, cameraProvider, child) {
           if (cameraProvider.isLoadingPublic) {
             return const Center(
@@ -155,7 +154,17 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
             ),
           );
         },
+    );
+
+    if (!widget.showAppBar) return content;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Câmeras públicas'),
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: AppTheme.primaryWhite,
       ),
+      body: content,
     );
   }
 }

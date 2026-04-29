@@ -17,6 +17,8 @@ class CamerasListScreen extends StatefulWidget {
 }
 
 class _CamerasListScreenState extends State<CamerasListScreen> {
+  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -27,24 +29,13 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMyCamerasTab = _selectedIndex == 0;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Câmeras de Segurança'),
+        title: Text(isMyCamerasTab ? 'Minhas câmeras' : 'Câmeras públicas'),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.public),
-            tooltip: 'Câmeras públicas',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PublicCamerasScreen(),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -77,7 +68,10 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
           ),
         ],
       ),
-      body: Consumer<CameraProvider>(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          Consumer<CameraProvider>(
         builder: (context, cameraProvider, child) {
           if (cameraProvider.isLoading) {
             return const Center(
@@ -129,7 +123,10 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+          const PublicCamerasScreen(showAppBar: false),
+        ],
+      ),
+      floatingActionButton: isMyCamerasTab ? FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
             context,
@@ -149,6 +146,28 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
         },
         backgroundColor: AppTheme.lightGreen,
         child: const Icon(Icons.add, color: AppTheme.primaryWhite),
+      ) : null,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        indicatorColor: AppTheme.softGreen,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.videocam_outlined),
+            selectedIcon: Icon(Icons.videocam),
+            label: 'Minhas câmeras',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.public_outlined),
+            selectedIcon: Icon(Icons.public),
+            label: 'Câmeras públicas',
+          ),
+        ],
       ),
     );
   }

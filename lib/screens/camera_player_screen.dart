@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import '../models/camera.dart';
+import '../providers/camera_provider.dart';
 import '../theme/app_theme.dart';
 import 'edit_camera_screen.dart';
 
@@ -23,17 +25,20 @@ class CameraPlayerScreen extends StatefulWidget {
 class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
   VideoPlayerController? _controller;
   TransformationController? _transformationController;
+  late Camera _camera;
   bool _isInitialized = false;
   bool _isPlaying = false;
   bool _isLoading = true;
   bool _isFullscreen = false;
   bool _showControls = true;
   bool _isZoomed = false;
+  bool _isTogglingPublic = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _camera = widget.camera;
     _transformationController = TransformationController();
     _transformationController!.addListener(_onTransformationChanged);
     _initializePlayer();
@@ -69,7 +74,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       });
 
       _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.camera.streamUrl),
+        Uri.parse(_camera.streamUrl),
       );
 
       await _controller!.initialize();
@@ -149,11 +154,46 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     _transformationController?.value = Matrix4.identity();
   }
 
+  Future<void> _togglePublic() async {
+    if (_isTogglingPublic || !widget.canEdit) return;
+    final next = !_camera.isPublic;
+    setState(() => _isTogglingPublic = true);
+    try {
+      await context.read<CameraProvider>().updateCamera(
+            _camera.copyWith(isPublic: next),
+          );
+      if (!mounted) return;
+      setState(() {
+        _camera = _camera.copyWith(isPublic: next);
+        _isTogglingPublic = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            next
+                ? 'Câmera pública: aparece em Câmeras públicas.'
+                : 'Câmera privada: removida da lista pública.',
+          ),
+          backgroundColor: AppTheme.lightGreen,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isTogglingPublic = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível alterar visibilidade: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _isFullscreen ? null : AppBar(
-        title: Text(widget.camera.name),
+        title: Text(_camera.name),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
@@ -163,11 +203,21 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditCameraScreen(camera: widget.camera),
+                    builder: (context) => EditCameraScreen(camera: _camera),
                   ),
                 );
                 if (!context.mounted) return;
                 if (result == true) {
+                  final refreshed =
+                      context.read<CameraProvider>().getCameraById(_camera.id);
+                  if (refreshed != null) {
+                    final streamChanged =
+                        refreshed.streamUrl != _camera.streamUrl;
+                    setState(() => _camera = refreshed);
+                    if (streamChanged) {
+                      _reload();
+                    }
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Câmera atualizada com sucesso!'),
@@ -179,11 +229,6 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               icon: const Icon(Icons.edit),
               tooltip: 'Editar Câmera',
             ),
-          IconButton(
-            onPressed: _reload,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Recarregar',
-          ),
         ],
       ),
       body: Column(
@@ -344,6 +389,32 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
             ),
             tooltip: 'Recarregar',
           ),
+          if (widget.canEdit) ...[
+            const SizedBox(width: 16),
+            IconButton(
+              onPressed:
+                  _isTogglingPublic || !_isInitialized ? null : _togglePublic,
+              icon: _isTogglingPublic
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.lightGreen,
+                      ),
+                    )
+                  : Icon(
+                      _camera.isPublic ? Icons.public : Icons.public_off,
+                      size: 24,
+                      color: _camera.isPublic
+                          ? AppTheme.lightGreen
+                          : AppTheme.primaryWhite,
+                    ),
+              tooltip: _camera.isPublic
+                  ? 'Remover das câmeras públicas'
+                  : 'Tornar câmera pública',
+            ),
+          ],
           const SizedBox(width: 16),
           IconButton(
             onPressed: _isZoomed ? _resetZoom : null,
@@ -384,14 +455,16 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _buildInfoRow('Nome', widget.camera.name),
-          _buildInfoRow('Descrição', widget.camera.description),
-        _buildInfoRow('Servidor', widget.camera.serverIp != null && widget.camera.serverPort != null ? '${widget.camera.serverIp}:${widget.camera.serverPort}' : '—'),
-          _buildInfoRow('Caminho', widget.camera.streamPath),
-          _buildInfoRow('Stream URL', widget.camera.streamUrl),
-          _buildInfoRow('Status', widget.camera.isActive ? 'Ativa' : 'Inativa'),
-          if (widget.camera.isPublic)
-            _buildInfoRow('Visibilidade', 'Pública'),
+          _buildInfoRow('Nome', _camera.name),
+          _buildInfoRow('Descrição', _camera.description),
+        _buildInfoRow('Servidor', _camera.serverIp != null && _camera.serverPort != null ? '${_camera.serverIp}:${_camera.serverPort}' : '—'),
+          _buildInfoRow('Caminho', _camera.streamPath),
+          _buildInfoRow('Stream URL', _camera.streamUrl),
+          _buildInfoRow('Status', _camera.isActive ? 'Ativa' : 'Inativa'),
+          _buildInfoRow(
+            'Visibilidade',
+            _camera.isPublic ? 'Pública' : 'Privada',
+          ),
         ],
       ),
     );
@@ -404,7 +477,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 110,
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
