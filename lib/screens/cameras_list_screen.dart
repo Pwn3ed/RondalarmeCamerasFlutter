@@ -260,6 +260,23 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
               Row(
                 children: [
                   Icon(
+                    Icons.settings_input_component,
+                    size: 16,
+                    color: AppTheme.lightGrey,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    camera.protocolLabel,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.lightGrey,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
                     Icons.link,
                     size: 16,
                     color: AppTheme.lightGrey,
@@ -267,7 +284,11 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      camera.streamPath,
+                      camera.usesRtsp
+                          ? camera.rtspPlaybackUrl
+                          : camera.usesHttpFile
+                              ? camera.streamUrl
+                              : camera.streamPath,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.lightGrey,
                       ),

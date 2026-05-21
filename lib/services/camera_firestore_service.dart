@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/camera.dart';
+import '../models/camera_protocol.dart';
 
 class CameraFirestoreService {
   static const String _localCacheKey = 'cameras_cache';
@@ -59,9 +60,11 @@ class CameraFirestoreService {
   Future<Camera> addCamera({
     required String name,
     required String description,
+    required CameraProtocol protocol,
     String? serverIp,
     int? serverPort,
     required String streamPath,
+    String? rtspUrl,
     required bool isManualMode,
     bool isPublic = false,
   }) async {
@@ -76,9 +79,11 @@ class CameraFirestoreService {
         id: '',
         name: name,
         description: description,
+        protocol: protocol,
         serverIp: serverIp,
         serverPort: serverPort,
         streamPath: streamPath,
+        rtspUrl: rtspUrl?.trim().isEmpty == true ? null : rtspUrl?.trim(),
         isManualMode: isManualMode,
         isPublic: isPublic,
         ownerId: uid,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/camera.dart';
+import '../models/camera_protocol.dart';
 import '../providers/camera_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/camera_stream_config_section.dart';
 
 class AddCameraScreen extends StatefulWidget {
   const AddCameraScreen({super.key});
@@ -18,15 +21,13 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   final _serverPortController = TextEditingController();
   final _streamPathController = TextEditingController();
   final _manualUrlController = TextEditingController();
-  
+  final _rtspUrlController = TextEditingController();
+  final _httpFileUrlController = TextEditingController();
+
   bool _isLoading = false;
+  CameraProtocol _protocol = CameraProtocol.hls;
   bool _isManualMode = false;
   bool _isPublic = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void dispose() {
@@ -36,6 +37,8 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
     _serverPortController.dispose();
     _streamPathController.dispose();
     _manualUrlController.dispose();
+    _rtspUrlController.dispose();
+    _httpFileUrlController.dispose();
     super.dispose();
   }
 
@@ -63,9 +66,9 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                       Text(
                         'Informações da Câmera',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: AppTheme.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -111,154 +114,20 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Configuração da URL',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Text(
-                            'Modo:',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            _isManualMode ? 'Manual' : 'Automático',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          Switch(
-                            value: _isManualMode,
-                            onChanged: (value) {
-                              setState(() {
-                                _isManualMode = value;
-                              });
-                            },
-                            thumbColor: const WidgetStatePropertyAll(AppTheme.primaryGreen),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      if (!_isManualMode) ...[
-                        Text(
-                          'Preencha os campos abaixo para gerar a URL automaticamente:',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.darkGrey,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _serverIpController,
-                          decoration: const InputDecoration(
-                            labelText: 'Servidor (DDNS/IP) *',
-                            hintText: 'rondagprs.ddns.net',
-                            prefixIcon: Icon(Icons.dns),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          validator: (value) {
-                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
-                              return 'Informe o servidor';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _serverPortController,
-                          decoration: const InputDecoration(
-                            labelText: 'Porta *',
-                            hintText: '8888',
-                            prefixIcon: Icon(Icons.settings_ethernet),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (!_isManualMode) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Informe a porta';
-                              }
-                              final port = int.tryParse(value.trim());
-                              if (port == null || port < 1 || port > 65535) {
-                                return 'Porta inválida (1-65535)';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _streamPathController,
-                          decoration: const InputDecoration(
-                            labelText: 'Caminho *',
-                            hintText: 'app/deni',
-                            prefixIcon: Icon(Icons.folder),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          validator: (value) {
-                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
-                              return 'Informe o caminho';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-
-                      if (_isManualMode) ...[
-                        Text(
-                          'Digite a URL completa do stream:',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.darkGrey,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _manualUrlController,
-                          decoration: const InputDecoration(
-                            labelText: 'URL Completa *',
-                            hintText: 'http://servidor.com:8888/stream.m3u8',
-                            prefixIcon: Icon(Icons.link),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          maxLines: 2,
-                          validator: (value) {
-                            if (_isManualMode) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Digite a URL completa';
-                              }
-                              if (!value.trim().startsWith('http://') && 
-                                  !value.trim().startsWith('https://')) {
-                                return 'URL deve começar com http:// ou https://';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              CameraStreamConfigSection(
+                protocol: _protocol,
+                onProtocolChanged: (p) {
+                  if (p == null) return;
+                  setState(() => _protocol = p);
+                },
+                isManualMode: _isManualMode,
+                onManualModeChanged: (v) => setState(() => _isManualMode = v),
+                serverIpController: _serverIpController,
+                serverPortController: _serverPortController,
+                streamPathController: _streamPathController,
+                manualUrlController: _manualUrlController,
+                rtspUrlController: _rtspUrlController,
+                httpFileUrlController: _httpFileUrlController,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -274,12 +143,14 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
                         ),
                       )
                     : const Text(
                         'Salvar Câmera',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style:
+                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
               const SizedBox(height: 16),
@@ -290,41 +161,83 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
     );
   }
 
-  Future<void> _saveCamera() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  Camera _buildCameraPayload() {
+    if (_protocol == CameraProtocol.rtsp) {
+      final url = _rtspUrlController.text.trim();
+      return Camera(
+        id: '',
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        protocol: CameraProtocol.rtsp,
+        streamPath: url,
+        rtspUrl: url,
+        isManualMode: false,
+        isPublic: _isPublic,
+        createdAt: DateTime.now(),
+      );
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (_protocol == CameraProtocol.httpFile) {
+      final url = _httpFileUrlController.text.trim();
+      return Camera(
+        id: '',
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        protocol: CameraProtocol.httpFile,
+        streamPath: url,
+        isManualMode: false,
+        isPublic: _isPublic,
+        createdAt: DateTime.now(),
+      );
+    }
+
+    if (_isManualMode) {
+      return Camera(
+        id: '',
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        protocol: CameraProtocol.hls,
+        streamPath: _manualUrlController.text.trim(),
+        isManualMode: true,
+        isPublic: _isPublic,
+        createdAt: DateTime.now(),
+      );
+    }
+
+    return Camera(
+      id: '',
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      protocol: CameraProtocol.hls,
+      serverIp: _serverIpController.text.trim(),
+      serverPort: int.parse(_serverPortController.text.trim()),
+      streamPath: _streamPathController.text.trim(),
+      isManualMode: false,
+      isPublic: _isPublic,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  Future<void> _saveCamera() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
 
     try {
-      if (_isManualMode) {
-        await context.read<CameraProvider>().addCamera(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          serverIp: null,
-          serverPort: null,
-          streamPath: _manualUrlController.text.trim(),
-          isManualMode: true,
-          isPublic: _isPublic,
-        );
-      } else {
-        await context.read<CameraProvider>().addCamera(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          serverIp: _serverIpController.text.trim(),
-          serverPort: int.parse(_serverPortController.text.trim()),
-          streamPath: _streamPathController.text.trim(),
-          isManualMode: false,
-          isPublic: _isPublic,
-        );
-      }
+      final payload = _buildCameraPayload();
+      await context.read<CameraProvider>().addCamera(
+            name: payload.name,
+            description: payload.description,
+            protocol: payload.protocol,
+            serverIp: payload.serverIp,
+            serverPort: payload.serverPort,
+            streamPath: payload.streamPath,
+            rtspUrl: payload.rtspUrl,
+            isManualMode: payload.isManualMode,
+            isPublic: payload.isPublic,
+          );
 
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -335,11 +248,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

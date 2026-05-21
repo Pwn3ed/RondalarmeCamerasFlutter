@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/camera.dart';
+import '../models/camera_protocol.dart';
 import '../providers/camera_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/camera_stream_config_section.dart';
 
 class EditCameraScreen extends StatefulWidget {
   final Camera camera;
@@ -21,24 +23,40 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
   late final TextEditingController _serverPortController;
   late final TextEditingController _streamPathController;
   late final TextEditingController _manualUrlController;
+  late final TextEditingController _rtspUrlController;
+  late final TextEditingController _httpFileUrlController;
 
   bool _isLoading = false;
+  late CameraProtocol _protocol;
   late bool _isManualMode;
   late bool _isPublic;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.camera.name);
-    _descriptionController = TextEditingController(text: widget.camera.description);
-    _serverIpController = TextEditingController(text: widget.camera.serverIp ?? '');
-    _serverPortController = TextEditingController(text: widget.camera.serverPort?.toString() ?? '');
-    _streamPathController = TextEditingController(text: widget.camera.streamPath);
-    _manualUrlController = TextEditingController(
-      text: widget.camera.isManualMode ? widget.camera.streamPath : '',
+    final cam = widget.camera;
+    _nameController = TextEditingController(text: cam.name);
+    _descriptionController = TextEditingController(text: cam.description);
+    _serverIpController = TextEditingController(text: cam.serverIp ?? '');
+    _serverPortController =
+        TextEditingController(text: cam.serverPort?.toString() ?? '');
+    _streamPathController = TextEditingController(
+      text: cam.usesRtsp || cam.usesHttpFile ? '' : cam.streamPath,
     );
-    _isManualMode = widget.camera.isManualMode;
-    _isPublic = widget.camera.isPublic;
+    _manualUrlController = TextEditingController(
+      text: cam.protocol == CameraProtocol.hls && cam.isManualMode
+          ? cam.streamPath
+          : '',
+    );
+    _rtspUrlController = TextEditingController(
+      text: cam.usesRtsp ? cam.rtspPlaybackUrl : (cam.rtspUrl ?? ''),
+    );
+    _httpFileUrlController = TextEditingController(
+      text: cam.usesHttpFile ? cam.streamPath : '',
+    );
+    _protocol = cam.protocol;
+    _isManualMode = cam.isManualMode;
+    _isPublic = cam.isPublic;
   }
 
   @override
@@ -49,6 +67,8 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     _serverPortController.dispose();
     _streamPathController.dispose();
     _manualUrlController.dispose();
+    _rtspUrlController.dispose();
+    _httpFileUrlController.dispose();
     super.dispose();
   }
 
@@ -76,16 +96,15 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                       Text(
                         'Informações da Câmera',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: AppTheme.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
                           labelText: 'Nome da Câmera *',
-                          hintText: 'Ex: Câmera Entrada',
                           prefixIcon: Icon(Icons.videocam),
                         ),
                         validator: (value) {
@@ -100,7 +119,6 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         controller: _descriptionController,
                         decoration: const InputDecoration(
                           labelText: 'Descrição',
-                          hintText: 'Ex: Câmera da entrada principal',
                           prefixIcon: Icon(Icons.description),
                         ),
                         maxLines: 2,
@@ -110,148 +128,20 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Configuração da URL',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Text(
-                            'Modo:',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            _isManualMode ? 'Manual' : 'Automático',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          Switch(
-                            value: _isManualMode,
-                            onChanged: (value) {
-                              setState(() {
-                                _isManualMode = value;
-                              });
-                            },
-                            thumbColor: const WidgetStatePropertyAll(AppTheme.primaryGreen),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (!_isManualMode) ...[
-                        Text(
-                          'Preencha os campos abaixo para gerar a URL automaticamente:',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.darkGrey,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _serverIpController,
-                          decoration: const InputDecoration(
-                            labelText: 'Servidor (DDNS/IP) *',
-                            hintText: 'rondagprs.ddns.net',
-                            prefixIcon: Icon(Icons.dns),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          validator: (value) {
-                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
-                              return 'Informe o servidor';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _serverPortController,
-                          decoration: const InputDecoration(
-                            labelText: 'Porta *',
-                            hintText: '8888',
-                            prefixIcon: Icon(Icons.settings_ethernet),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (!_isManualMode) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Informe a porta';
-                              }
-                              final port = int.tryParse(value.trim());
-                              if (port == null || port < 1 || port > 65535) {
-                                return 'Porta inválida (1-65535)';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _streamPathController,
-                          decoration: const InputDecoration(
-                            labelText: 'Caminho *',
-                            hintText: 'app/deni',
-                            prefixIcon: Icon(Icons.folder),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          validator: (value) {
-                            if (!_isManualMode && (value == null || value.trim().isEmpty)) {
-                              return 'Informe o caminho';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                      if (_isManualMode) ...[
-                        Text(
-                          'Digite a URL completa do stream:',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.darkGrey,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _manualUrlController,
-                          decoration: const InputDecoration(
-                            labelText: 'URL Completa *',
-                            hintText: 'http://servidor.com:8888/stream.m3u8',
-                            prefixIcon: Icon(Icons.link),
-                          ),
-                          enableSuggestions: false,
-                          autocorrect: false,
-                          maxLines: 2,
-                          validator: (value) {
-                            if (_isManualMode) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Digite a URL completa';
-                              }
-                              if (!value.trim().startsWith('http://') &&
-                                  !value.trim().startsWith('https://')) {
-                                return 'URL deve começar com http:// ou https://';
-                              }
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              CameraStreamConfigSection(
+                protocol: _protocol,
+                onProtocolChanged: (p) {
+                  if (p == null) return;
+                  setState(() => _protocol = p);
+                },
+                isManualMode: _isManualMode,
+                onManualModeChanged: (v) => setState(() => _isManualMode = v),
+                serverIpController: _serverIpController,
+                serverPortController: _serverPortController,
+                streamPathController: _streamPathController,
+                manualUrlController: _manualUrlController,
+                rtspUrlController: _rtspUrlController,
+                httpFileUrlController: _httpFileUrlController,
               ),
               const SizedBox(height: 16),
               Card(
@@ -295,14 +185,20 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                       Text(
                         'Informações do Sistema',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: AppTheme.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 16),
                       _buildInfoRow('ID da Câmera', widget.camera.id),
-                      _buildInfoRow('Data de Criação', _formatDate(widget.camera.createdAt)),
-                      _buildInfoRow('Status Atual', widget.camera.isActive ? 'Ativa' : 'Inativa'),
+                      _buildInfoRow(
+                        'Data de Criação',
+                        _formatDate(widget.camera.createdAt),
+                      ),
+                      _buildInfoRow(
+                        'Status Atual',
+                        widget.camera.isActive ? 'Ativa' : 'Inativa',
+                      ),
                     ],
                   ),
                 ),
@@ -321,12 +217,14 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
                         ),
                       )
                     : const Text(
                         'Atualizar Câmera',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style:
+                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
               const SizedBox(height: 16),
@@ -337,15 +235,61 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                   side: const BorderSide(color: AppTheme.primaryGreen),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(fontSize: 16),
-                ),
+                child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Camera _buildUpdatedCamera() {
+    final base = widget.camera.copyWith(
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      isPublic: _isPublic,
+    );
+
+    if (_protocol == CameraProtocol.rtsp) {
+      final url = _rtspUrlController.text.trim();
+      return base.copyWith(
+        protocol: CameraProtocol.rtsp,
+        streamPath: url,
+        rtspUrl: url,
+        isManualMode: false,
+        clearServer: true,
+      );
+    }
+
+    if (_protocol == CameraProtocol.httpFile) {
+      final url = _httpFileUrlController.text.trim();
+      return base.copyWith(
+        protocol: CameraProtocol.httpFile,
+        streamPath: url,
+        isManualMode: false,
+        clearServer: true,
+        clearRtspUrl: true,
+      );
+    }
+
+    if (_isManualMode) {
+      return base.copyWith(
+        protocol: CameraProtocol.hls,
+        streamPath: _manualUrlController.text.trim(),
+        isManualMode: true,
+        clearServer: true,
+        clearRtspUrl: true,
+      );
+    }
+
+    return base.copyWith(
+      protocol: CameraProtocol.hls,
+      serverIp: _serverIpController.text.trim(),
+      serverPort: int.parse(_serverPortController.text.trim()),
+      streamPath: _streamPathController.text.trim(),
+      isManualMode: false,
+      clearRtspUrl: true,
     );
   }
 
@@ -360,17 +304,17 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppTheme.darkGrey,
-              ),
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.darkGrey,
+                  ),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.primaryBlack,
-              ),
+                    color: AppTheme.primaryBlack,
+                  ),
             ),
           ),
         ],
@@ -383,50 +327,13 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
   }
 
   Future<void> _updateCamera() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      late Camera updatedCamera;
-
-      if (_isManualMode) {
-        updatedCamera = widget.camera.copyWith(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          serverIp: null,
-          serverPort: null,
-          streamPath: _manualUrlController.text.trim(),
-          isManualMode: true,
-          isPublic: _isPublic,
-        );
-      } else {
-        updatedCamera = widget.camera.copyWith(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          serverIp: _serverIpController.text.trim(),
-          serverPort: int.parse(_serverPortController.text.trim()),
-          streamPath: _streamPathController.text.trim(),
-          isManualMode: false,
-          isPublic: _isPublic,
-        );
-      }
-
-      await context.read<CameraProvider>().updateCamera(updatedCamera);
-
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Câmera atualizada com sucesso!'),
-            backgroundColor: AppTheme.lightGreen,
-          ),
-        );
-      }
+      await context.read<CameraProvider>().updateCamera(_buildUpdatedCamera());
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -437,11 +344,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

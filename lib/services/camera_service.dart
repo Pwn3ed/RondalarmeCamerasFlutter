@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/camera.dart';
+import '../models/camera_protocol.dart';
 
 class CameraService {
   static const String _storageKey = 'cameras';
@@ -19,18 +20,22 @@ class CameraService {
   Future<Camera> addCamera({
     required String name,
     required String description,
+    required CameraProtocol protocol,
     String? serverIp,
     int? serverPort,
     required String streamPath,
+    String? rtspUrl,
     required bool isManualMode,
   }) async {
     final camera = Camera(
       id: _uuid.v4(),
       name: name,
       description: description,
+      protocol: protocol,
       serverIp: serverIp,
       serverPort: serverPort,
       streamPath: streamPath,
+      rtspUrl: rtspUrl?.trim().isEmpty == true ? null : rtspUrl?.trim(),
       isManualMode: isManualMode,
       isPublic: false,
       createdAt: DateTime.now(),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/camera.dart';
+import '../models/camera_protocol.dart';
 import '../services/camera_firestore_service.dart';
 
 class CameraProvider with ChangeNotifier {
@@ -50,9 +51,11 @@ class CameraProvider with ChangeNotifier {
   Future<void> addCamera({
     required String name,
     required String description,
+    required CameraProtocol protocol,
     String? serverIp,
     int? serverPort,
     required String streamPath,
+    String? rtspUrl,
     required bool isManualMode,
     bool isPublic = false,
   }) async {
@@ -60,9 +63,11 @@ class CameraProvider with ChangeNotifier {
       final camera = await _cameraService.addCamera(
         name: name,
         description: description,
+        protocol: protocol,
         serverIp: serverIp,
         serverPort: serverPort,
         streamPath: streamPath,
+        rtspUrl: rtspUrl,
         isManualMode: isManualMode,
         isPublic: isPublic,
       );
