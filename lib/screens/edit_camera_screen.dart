@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../models/app_user.dart';
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
+import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../services/audit_log_service.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/camera_stream_config_section.dart';
 
@@ -26,15 +31,30 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
   late final TextEditingController _rtspUrlController;
   late final TextEditingController _httpFileUrlController;
 
+  final _userService = UserService();
+  final _auditLog = AuditLogService();
+
   bool _isLoading = false;
+  bool _loadingUsers = true;
   late CameraProtocol _protocol;
   late bool _isManualMode;
   late bool _isPublic;
+  List<AppUser> _owners = [];
+  late String? _selectedOwnerId;
 
   @override
   void initState() {
     super.initState();
+    final isAdmin = context.read<AuthProvider>().isAdmin;
+    if (!isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
+      return;
+    }
     final cam = widget.camera;
+    _selectedOwnerId = cam.ownerId;
+    _loadOwners();
     _nameController = TextEditingController(text: cam.name);
     _descriptionController = TextEditingController(text: cam.description);
     _serverIpController = TextEditingController(text: cam.serverIp ?? '');
@@ -59,6 +79,20 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     _isPublic = cam.isPublic;
   }
 
+  Future<void> _loadOwners() async {
+    try {
+      final owners = await _userService.listForOwnerDropdown();
+      if (mounted) {
+        setState(() {
+          _owners = owners;
+          _loadingUsers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingUsers = false);
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -74,6 +108,14 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingUsers) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Editar ${widget.camera.name}'),
@@ -99,6 +141,27 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                               color: AppTheme.primaryGreen,
                               fontWeight: FontWeight.bold,
                             ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _owners.any((u) => u.uid == _selectedOwnerId)
+                            ? _selectedOwnerId
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Atribuir a usuário *',
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        items: _owners
+                            .map(
+                              (u) => DropdownMenuItem(
+                                value: u.uid,
+                                child: Text('${u.displayName} (${u.email})'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedOwnerId = v),
+                        validator: (v) =>
+                            v == null ? 'Selecione o usuário dono' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -249,6 +312,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       isPublic: _isPublic,
+      ownerId: _selectedOwnerId,
     );
 
     if (_protocol == CameraProtocol.rtsp) {
@@ -332,7 +396,28 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await context.read<CameraProvider>().updateCamera(_buildUpdatedCamera());
+      final updated = _buildUpdatedCamera();
+      final wasPublic = widget.camera.isPublic;
+      await context.read<CameraProvider>().updateCamera(updated);
+      await _auditLog.log(
+        action: 'camera_updated',
+        targetUid: updated.ownerId,
+        targetCameraId: updated.id,
+      );
+      if (wasPublic != updated.isPublic) {
+        await _auditLog.log(
+          action: 'camera_public_toggled',
+          targetCameraId: updated.id,
+          metadata: {'isPublic': updated.isPublic},
+        );
+      }
+      if (widget.camera.ownerId != updated.ownerId) {
+        await _auditLog.log(
+          action: 'camera_assigned',
+          targetUid: updated.ownerId,
+          targetCameraId: updated.id,
+        );
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {

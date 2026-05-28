@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,30 +24,85 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  Future<void> _handleDeviceKickDialog() async {
+    final auth = context.read<AuthProvider>();
+    final maxDevices = auth.appUser?.maxDevices ?? 2;
+
+    if (!mounted) return;
+    final choice = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Limite de dispositivos'),
+        content: Text(
+          'Esta conta já está em uso em $maxDevices ou mais dispositivos. '
+          'Deseja continuar aqui e desconectar o dispositivo mais antigo?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continuar aqui'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (choice == true) {
+      final ok = await auth.kickOldestDeviceAndContinue();
+      if (!mounted) return;
+      if (!ok && auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      await auth.cancelPendingSignIn();
     }
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.signIn(
+    final result = await authProvider.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
-    if (mounted && !success && authProvider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage!),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (!mounted) return;
+
+    switch (result) {
+      case SignInResult.success:
+        break;
+      case SignInResult.needsDeviceKick:
+        await _handleDeviceKickDialog();
+        break;
+      case SignInResult.accountNotEnabled:
+      case SignInResult.accountDisabled:
+      case SignInResult.error:
+        if (authProvider.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
     }
   }
 
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
-    
+
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -93,39 +148,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Rondalarme Câmeras',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppTheme.primaryGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 24),
-
                   Image.asset(
                     'logo.png',
                     height: 180,
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 24),
-
                   Text(
                     'Proteja o que importa. Monitore suas câmeras em qualquer lugar.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.darkGrey,
-                    ),
+                          color: AppTheme.darkGrey,
+                        ),
                   ),
-
                   const SizedBox(height: 48),
-
                   Text(
                     'Digite suas credenciais',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.darkGrey,
-                    ),
+                          color: AppTheme.darkGrey,
+                        ),
                   ),
-
                   const SizedBox(height: 12),
-
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -145,7 +194,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -155,7 +203,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
                         onPressed: () {
                           setState(() {
@@ -175,7 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -187,7 +236,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
                       return ElevatedButton(
@@ -217,34 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       );
                     },
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Não tem uma conta? ',
-                        style: TextStyle(color: AppTheme.darkGrey),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Cadastre-se',
-                          style: TextStyle(
-                            color: AppTheme.primaryGreen,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

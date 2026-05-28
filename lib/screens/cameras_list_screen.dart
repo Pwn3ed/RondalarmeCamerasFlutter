@@ -8,6 +8,9 @@ import 'add_camera_screen.dart';
 import 'edit_camera_screen.dart';
 import 'camera_player_screen.dart';
 import 'public_cameras_screen.dart';
+import 'admin/users_admin_screen.dart';
+import 'admin/sessions_admin_screen.dart';
+import 'admin/audit_logs_screen.dart';
 
 class CamerasListScreen extends StatefulWidget {
   const CamerasListScreen({super.key});
@@ -30,12 +33,48 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
   @override
   Widget build(BuildContext context) {
     final isMyCamerasTab = _selectedIndex == 0;
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(isMyCamerasTab ? 'Minhas câmeras' : 'Câmeras públicas'),
+        title: Text(
+          isMyCamerasTab
+              ? (isAdmin ? 'Câmeras' : 'Minhas câmeras')
+              : 'Câmeras públicas',
+        ),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
+          if (isAdmin)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.admin_panel_settings),
+              tooltip: 'Administração',
+              onSelected: (value) {
+                Widget screen;
+                switch (value) {
+                  case 'users':
+                    screen = const UsersAdminScreen();
+                    break;
+                  case 'sessions':
+                    screen = const SessionsAdminScreen();
+                    break;
+                  case 'audit':
+                    screen = const AuditLogsScreen();
+                    break;
+                  default:
+                    return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => screen),
+                );
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'users', child: Text('Usuários')),
+                PopupMenuItem(value: 'sessions', child: Text('Sessões')),
+                PopupMenuItem(value: 'audit', child: Text('Logs')),
+              ],
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -100,10 +139,13 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Toque no botão + para adicionar uma câmera',
+                    isAdmin
+                        ? 'Toque no botão + para adicionar uma câmera'
+                        : 'Aguarde o administrador cadastrar suas câmeras',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.lightGrey,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -117,7 +159,12 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
               itemCount: cameraProvider.cameras.length,
               itemBuilder: (context, index) {
                 final camera = cameraProvider.cameras[index];
-                return _buildCameraCard(context, camera, cameraProvider);
+                return _buildCameraCard(
+                  context,
+                  camera,
+                  cameraProvider,
+                  isAdmin: isAdmin,
+                );
               },
             ),
           );
@@ -126,7 +173,8 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
           const PublicCamerasScreen(showAppBar: false),
         ],
       ),
-      floatingActionButton: isMyCamerasTab ? FloatingActionButton(
+      floatingActionButton: isMyCamerasTab && isAdmin
+          ? FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
             context,
@@ -172,7 +220,12 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
     );
   }
 
-  Widget _buildCameraCard(BuildContext context, Camera camera, CameraProvider cameraProvider) {
+  Widget _buildCameraCard(
+    BuildContext context,
+    Camera camera,
+    CameraProvider cameraProvider, {
+    required bool isAdmin,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -180,7 +233,11 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CameraPlayerScreen(camera: camera),
+              builder: (context) => CameraPlayerScreen(
+                camera: camera,
+                canEdit: isAdmin,
+                showSensitiveInfo: isAdmin,
+              ),
             ),
           );
         },
@@ -232,71 +289,44 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.computer,
-                    size: 16,
-                    color: AppTheme.lightGrey,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      camera.serverIp != null && camera.serverPort != null
-                          ? '${camera.serverIp}:${camera.serverPort}'
-                          : camera.streamUrl,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.lightGrey,
+              if (isAdmin) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.computer, size: 16, color: AppTheme.lightGrey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        camera.serverIp != null && camera.serverPort != null
+                            ? '${camera.serverIp}:${camera.serverPort}'
+                            : camera.streamUrl,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.lightGrey,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      softWrap: false,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.settings_input_component,
-                    size: 16,
-                    color: AppTheme.lightGrey,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    camera.protocolLabel,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.lightGrey,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.link,
-                    size: 16,
-                    color: AppTheme.lightGrey,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      camera.usesRtsp
-                          ? camera.rtspPlaybackUrl
-                          : camera.usesHttpFile
-                              ? camera.streamUrl
-                              : camera.streamPath,
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.settings_input_component,
+                      size: 16,
+                      color: AppTheme.lightGrey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      camera.protocolLabel,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.lightGrey,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                            color: AppTheme.lightGrey,
+                          ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -307,51 +337,60 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                       color: AppTheme.lightGrey,
                     ),
                   ),
-                                     Row(
-                     children: [
-                       IconButton(
-                         onPressed: () {
-                           Navigator.push(
-                             context,
-                             MaterialPageRoute(
-                               builder: (context) => CameraPlayerScreen(camera: camera),
-                             ),
-                           );
-                         },
-                         icon: const Icon(Icons.play_arrow),
-                         color: AppTheme.primaryGreen,
-                         tooltip: 'Reproduzir',
-                       ),
-                       IconButton(
-                         onPressed: () async {
-                           final result = await Navigator.push(
-                             context,
-                             MaterialPageRoute(
-                               builder: (context) => EditCameraScreen(camera: camera),
-                             ),
-                           );
-                           if (!context.mounted) return;
-                           if (result == true) {
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               const SnackBar(
-                                 content: Text('Câmera atualizada com sucesso!'),
-                                 backgroundColor: AppTheme.lightGreen,
-                               ),
-                             );
-                           }
-                         },
-                         icon: const Icon(Icons.edit),
-                         color: AppTheme.lightGreen,
-                         tooltip: 'Editar',
-                       ),
-                       IconButton(
-                         onPressed: () => _showDeleteDialog(context, camera, cameraProvider),
-                         icon: const Icon(Icons.delete),
-                         color: Colors.red,
-                         tooltip: 'Excluir',
-                       ),
-                     ],
-                   ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CameraPlayerScreen(
+                                camera: camera,
+                                canEdit: isAdmin,
+                                showSensitiveInfo: isAdmin,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.play_arrow),
+                        color: AppTheme.primaryGreen,
+                        tooltip: 'Reproduzir',
+                      ),
+                      if (isAdmin) ...[
+                        IconButton(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditCameraScreen(camera: camera),
+                              ),
+                            );
+                            if (!context.mounted) return;
+                            if (result == true) {
+                              await cameraProvider.loadCameras();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Câmera atualizada com sucesso!'),
+                                  backgroundColor: AppTheme.lightGreen,
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.edit),
+                          color: AppTheme.lightGreen,
+                          tooltip: 'Editar',
+                        ),
+                        IconButton(
+                          onPressed: () =>
+                              _showDeleteDialog(context, camera, cameraProvider),
+                          icon: const Icon(Icons.delete),
+                          color: Colors.red,
+                          tooltip: 'Excluir',
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ],

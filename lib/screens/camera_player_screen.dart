@@ -12,11 +12,13 @@ import 'edit_camera_screen.dart';
 class CameraPlayerScreen extends StatefulWidget {
   final Camera camera;
   final bool canEdit;
+  final bool showSensitiveInfo;
 
   const CameraPlayerScreen({
     super.key,
     required this.camera,
-    this.canEdit = true,
+    this.canEdit = false,
+    this.showSensitiveInfo = false,
   });
 
   @override
@@ -323,7 +325,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           Expanded(child: _buildVideoPlayer()),
           if (!_isFullscreen) ...[
             _buildControls(),
-            _buildCameraInfo(),
+            if (widget.showSensitiveInfo) _buildCameraInfo(),
           ] else if (_showControls)
             _buildControls(),
         ],

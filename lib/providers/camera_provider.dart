@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../services/camera_firestore_service.dart';
@@ -10,6 +11,7 @@ class CameraProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingPublic = false;
   String? _publicCamerasError;
+  bool _isAdmin = false;
 
   List<Camera> get cameras => _cameras;
   List<Camera> get publicCameras => _publicCameras;
@@ -17,12 +19,20 @@ class CameraProvider with ChangeNotifier {
   bool get isLoadingPublic => _isLoadingPublic;
   String? get publicCamerasError => _publicCamerasError;
 
+  void setAdminMode(bool isAdmin) {
+    if (_isAdmin == isAdmin) return;
+    _isAdmin = isAdmin;
+    _cameras = [];
+    _publicCameras = [];
+    notifyListeners();
+  }
+
   Future<void> loadCameras() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _cameras = await _cameraService.getAllCameras();
+      _cameras = await _cameraService.getAllCameras(isAdmin: _isAdmin);
     } catch (e) {
       _cameras = [];
     } finally {
@@ -58,75 +68,65 @@ class CameraProvider with ChangeNotifier {
     String? rtspUrl,
     required bool isManualMode,
     bool isPublic = false,
+    required String ownerId,
   }) async {
-    try {
-      final camera = await _cameraService.addCamera(
-        name: name,
-        description: description,
-        protocol: protocol,
-        serverIp: serverIp,
-        serverPort: serverPort,
-        streamPath: streamPath,
-        rtspUrl: rtspUrl,
-        isManualMode: isManualMode,
-        isPublic: isPublic,
-      );
+    final camera = await _cameraService.addCamera(
+      name: name,
+      description: description,
+      protocol: protocol,
+      serverIp: serverIp,
+      serverPort: serverPort,
+      streamPath: streamPath,
+      rtspUrl: rtspUrl,
+      isManualMode: isManualMode,
+      isPublic: isPublic,
+      ownerId: ownerId,
+    );
 
-      _cameras.add(camera);
-      notifyListeners();
-    } catch (e) {
-      rethrow;
-    }
+    _cameras.insert(0, camera);
+    notifyListeners();
   }
 
   Future<void> updateCamera(Camera camera) async {
-    try {
-      await _cameraService.updateCamera(camera);
-      final index = _cameras.indexWhere((c) => c.id == camera.id);
+    await _cameraService.updateCamera(camera);
+    final index = _cameras.indexWhere((c) => c.id == camera.id);
 
-      if (index != -1) {
-        _cameras[index] = camera;
-        notifyListeners();
-      }
+    if (index != -1) {
+      _cameras[index] = camera;
+      notifyListeners();
+    }
 
-      final pubIndex = _publicCameras.indexWhere((c) => c.id == camera.id);
-      if (pubIndex != -1) {
-        if (camera.isPublic) {
-          _publicCameras[pubIndex] = camera;
-        } else {
-          _publicCameras.removeAt(pubIndex);
-        }
-        notifyListeners();
+    final pubIndex = _publicCameras.indexWhere((c) => c.id == camera.id);
+    if (pubIndex != -1) {
+      if (camera.isPublic) {
+        _publicCameras[pubIndex] = camera;
+      } else {
+        _publicCameras.removeAt(pubIndex);
       }
-    } catch (e) {
-      rethrow;
+      notifyListeners();
+    } else if (camera.isPublic) {
+      _publicCameras.add(camera);
+      _publicCameras.sort((a, b) => a.name.compareTo(b.name));
+      notifyListeners();
     }
   }
 
   Future<void> deleteCamera(String id) async {
-    try {
-      await _cameraService.deleteCamera(id);
-      _cameras.removeWhere((camera) => camera.id == id);
-      _publicCameras.removeWhere((camera) => camera.id == id);
-      notifyListeners();
-    } catch (e) {
-      rethrow;
-    }
+    await _cameraService.deleteCamera(id);
+    _cameras.removeWhere((camera) => camera.id == id);
+    _publicCameras.removeWhere((camera) => camera.id == id);
+    notifyListeners();
   }
 
   Future<void> toggleCameraStatus(String id) async {
-    try {
-      await _cameraService.toggleCameraStatus(id);
-      final index = _cameras.indexWhere((c) => c.id == id);
+    await _cameraService.toggleCameraStatus(id);
+    final index = _cameras.indexWhere((c) => c.id == id);
 
-      if (index != -1) {
-        _cameras[index] = _cameras[index].copyWith(
-          isActive: !_cameras[index].isActive,
-        );
-        notifyListeners();
-      }
-    } catch (e) {
-      rethrow;
+    if (index != -1) {
+      _cameras[index] = _cameras[index].copyWith(
+        isActive: !_cameras[index].isActive,
+      );
+      notifyListeners();
     }
   }
 
@@ -139,7 +139,7 @@ class CameraProvider with ChangeNotifier {
   }
 
   Stream<List<Camera>> watchCameras() {
-    return _cameraService.camerasStream();
+    return _cameraService.camerasStream(isAdmin: _isAdmin);
   }
 
   Future<void> clearCache() async {

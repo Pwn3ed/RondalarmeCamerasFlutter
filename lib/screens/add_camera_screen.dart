@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../models/app_user.dart';
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
+import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../services/audit_log_service.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/camera_stream_config_section.dart';
 
@@ -23,11 +28,44 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   final _manualUrlController = TextEditingController();
   final _rtspUrlController = TextEditingController();
   final _httpFileUrlController = TextEditingController();
+  final _userService = UserService();
+  final _auditLog = AuditLogService();
 
   bool _isLoading = false;
+  bool _loadingUsers = true;
   CameraProtocol _protocol = CameraProtocol.hls;
   bool _isManualMode = false;
   bool _isPublic = false;
+  List<AppUser> _owners = [];
+  String? _selectedOwnerId;
+
+  @override
+  void initState() {
+    super.initState();
+    final isAdmin = context.read<AuthProvider>().isAdmin;
+    if (!isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
+      return;
+    }
+    _loadOwners();
+  }
+
+  Future<void> _loadOwners() async {
+    try {
+      final owners = await _userService.listForOwnerDropdown();
+      if (mounted) {
+        setState(() {
+          _owners = owners;
+          _selectedOwnerId = owners.isNotEmpty ? owners.first.uid : null;
+          _loadingUsers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingUsers = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -44,6 +82,14 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingUsers) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adicionar Câmera'),
@@ -69,6 +115,30 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                               color: AppTheme.primaryGreen,
                               fontWeight: FontWeight.bold,
                             ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedOwnerId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Atribuir a usuário *',
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        items: _owners
+                            .map(
+                              (u) => DropdownMenuItem(
+                                value: u.uid,
+                                child: Text(
+                                  '${u.displayName} (${u.email})',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedOwnerId = v),
+                        validator: (v) =>
+                            v == null ? 'Selecione o usuário dono' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -100,7 +170,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Tornar câmera pública'),
                         subtitle: Text(
-                          'Se ativado, outros usuários poderão ver e reproduzir esta câmera em Câmeras públicas.',
+                          'Outros usuários poderão ver e reproduzir em Câmeras públicas.',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppTheme.darkGrey,
                               ),
@@ -153,7 +223,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                             TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -173,6 +242,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         rtspUrl: url,
         isManualMode: false,
         isPublic: _isPublic,
+        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -187,6 +257,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         streamPath: url,
         isManualMode: false,
         isPublic: _isPublic,
+        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -200,6 +271,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         streamPath: _manualUrlController.text.trim(),
         isManualMode: true,
         isPublic: _isPublic,
+        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -214,28 +286,44 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
       streamPath: _streamPathController.text.trim(),
       isManualMode: false,
       isPublic: _isPublic,
+      ownerId: _selectedOwnerId,
       createdAt: DateTime.now(),
     );
   }
 
   Future<void> _saveCamera() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedOwnerId == null) return;
 
     setState(() => _isLoading = true);
 
     try {
       final payload = _buildCameraPayload();
-      await context.read<CameraProvider>().addCamera(
-            name: payload.name,
-            description: payload.description,
-            protocol: payload.protocol,
-            serverIp: payload.serverIp,
-            serverPort: payload.serverPort,
-            streamPath: payload.streamPath,
-            rtspUrl: payload.rtspUrl,
-            isManualMode: payload.isManualMode,
-            isPublic: payload.isPublic,
-          );
+      final provider = context.read<CameraProvider>();
+      await provider.addCamera(
+        name: payload.name,
+        description: payload.description,
+        protocol: payload.protocol,
+        serverIp: payload.serverIp,
+        serverPort: payload.serverPort,
+        streamPath: payload.streamPath,
+        rtspUrl: payload.rtspUrl,
+        isManualMode: payload.isManualMode,
+        isPublic: payload.isPublic,
+        ownerId: _selectedOwnerId!,
+      );
+
+      final added = provider.cameras.firstWhere(
+        (c) => c.name == payload.name && c.ownerId == _selectedOwnerId,
+        orElse: () => provider.cameras.last,
+      );
+
+      await _auditLog.log(
+        action: 'camera_created',
+        targetUid: _selectedOwnerId,
+        targetCameraId: added.id,
+        metadata: {'assignedTo': _selectedOwnerId, 'isPublic': _isPublic},
+      );
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {

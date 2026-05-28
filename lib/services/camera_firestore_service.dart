@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 
@@ -10,17 +12,11 @@ class CameraFirestoreService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   String? get _currentUserId => _auth.currentUser?.uid;
 
-  CollectionReference<Map<String, dynamic>> _getUserCamerasCollection() {
-    if (_currentUserId == null) {
-      throw Exception('Usuário não autenticado');
-    }
-    return _firestore
-        .collection('users')
-        .doc(_currentUserId)
-        .collection('cameras');
-  }
+  CollectionReference<Map<String, dynamic>> get _cameras =>
+      _firestore.collection('cameras');
 
   Map<String, dynamic> _cameraPayloadForWrite(Camera camera) {
     final map = Map<String, dynamic>.from(camera.toJson());
@@ -28,32 +24,38 @@ class CameraFirestoreService {
     return map;
   }
 
-  Camera _cameraFromUserDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-    String ownerUid,
-  ) {
+  Camera _cameraFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     return Camera.fromJson({
-      ...doc.data(),
+      ...doc.data()!,
       'id': doc.id,
-      'ownerId': ownerUid,
+      'ownerId': doc.data()!['ownerId'] as String?,
     });
   }
 
-  Future<List<Camera>> getAllCameras() async {
+  Future<List<Camera>> getAllCameras({required bool isAdmin}) async {
     try {
       if (_currentUserId == null) {
         return _getCachedCameras();
       }
 
-      final uid = _currentUserId!;
-      final snapshot = await _getUserCamerasCollection().get();
-      final cameras = snapshot.docs
-          .map((doc) => _cameraFromUserDoc(doc, uid))
-          .toList();
-      await _saveCacheLocal(cameras);
+      final QuerySnapshot<Map<String, dynamic>> snapshot;
+      if (isAdmin) {
+        snapshot = await _cameras.orderBy('createdAt', descending: true).get();
+      } else {
+        snapshot = await _cameras
+            .where('ownerId', isEqualTo: _currentUserId)
+            .orderBy('createdAt', descending: true)
+            .get();
+      }
+
+      final cameras = snapshot.docs.map(_cameraFromDoc).toList();
+      if (!isAdmin) {
+        await _saveCacheLocal(cameras);
+      }
       return cameras;
     } catch (e) {
-      return _getCachedCameras();
+      if (!isAdmin) return _getCachedCameras();
+      rethrow;
     }
   }
 
@@ -67,36 +69,29 @@ class CameraFirestoreService {
     String? rtspUrl,
     required bool isManualMode,
     bool isPublic = false,
+    required String ownerId,
   }) async {
     if (_currentUserId == null) {
       throw Exception('Usuário não autenticado');
     }
 
-    final uid = _currentUserId!;
+    final camera = Camera(
+      id: '',
+      name: name,
+      description: description,
+      protocol: protocol,
+      serverIp: serverIp,
+      serverPort: serverPort,
+      streamPath: streamPath,
+      rtspUrl: rtspUrl?.trim().isEmpty == true ? null : rtspUrl?.trim(),
+      isManualMode: isManualMode,
+      isPublic: isPublic,
+      ownerId: ownerId,
+      createdAt: DateTime.now(),
+    );
 
-    try {
-      final camera = Camera(
-        id: '',
-        name: name,
-        description: description,
-        protocol: protocol,
-        serverIp: serverIp,
-        serverPort: serverPort,
-        streamPath: streamPath,
-        rtspUrl: rtspUrl?.trim().isEmpty == true ? null : rtspUrl?.trim(),
-        isManualMode: isManualMode,
-        isPublic: isPublic,
-        ownerId: uid,
-        createdAt: DateTime.now(),
-      );
-
-      final docRef = await _getUserCamerasCollection()
-          .add(_cameraPayloadForWrite(camera));
-      final cameraWithId = camera.copyWith(id: docRef.id);
-      return cameraWithId;
-    } catch (e) {
-      rethrow;
-    }
+    final docRef = await _cameras.add(_cameraPayloadForWrite(camera));
+    return camera.copyWith(id: docRef.id);
   }
 
   Future<void> updateCamera(Camera camera) async {
@@ -104,30 +99,14 @@ class CameraFirestoreService {
       throw Exception('Usuário não autenticado');
     }
 
-    final uid = _currentUserId!;
-    final withOwner = camera.ownerId == null || camera.ownerId!.isEmpty
-        ? camera.copyWith(ownerId: uid)
-        : camera;
-
-    try {
-      await _getUserCamerasCollection()
-          .doc(withOwner.id)
-          .update(_cameraPayloadForWrite(withOwner));
-    } catch (e) {
-      rethrow;
-    }
+    await _cameras.doc(camera.id).update(_cameraPayloadForWrite(camera));
   }
 
   Future<void> deleteCamera(String id) async {
     if (_currentUserId == null) {
       throw Exception('Usuário não autenticado');
     }
-
-    try {
-      await _getUserCamerasCollection().doc(id).delete();
-    } catch (e) {
-      rethrow;
-    }
+    await _cameras.doc(id).delete();
   }
 
   Future<void> toggleCameraStatus(String id) async {
@@ -135,88 +114,44 @@ class CameraFirestoreService {
       throw Exception('Usuário não autenticado');
     }
 
-    try {
-      final doc = await _getUserCamerasCollection().doc(id).get();
-      if (doc.exists) {
-        final isActive = doc.data()?['isActive'] ?? true;
-        await _getUserCamerasCollection()
-            .doc(id)
-            .update({'isActive': !isActive});
-      }
-    } catch (e) {
-      rethrow;
+    final doc = await _cameras.doc(id).get();
+    if (doc.exists) {
+      final isActive = doc.data()?['isActive'] ?? true;
+      await _cameras.doc(id).update({'isActive': !isActive});
     }
   }
 
-  Camera _cameraFromGroupDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final ownerFromPath = doc.reference.parent.parent?.id;
-    final ownerId = (doc.data()['ownerId'] as String?) ?? ownerFromPath;
-    return Camera.fromJson({
-      ...doc.data(),
-      'id': doc.id,
-      if (ownerId != null) 'ownerId': ownerId,
-    });
-  }
-
-  /// Câmeras públicas: junta (1) as suas em `users/{uid}/cameras` — sempre permitido pelas regras de dono —
-  /// com (2) `collectionGroup('cameras')` — precisa de regra que permita ler documentos com `isPublic == true`.
   Future<List<Camera>> getPublicCameras() async {
     if (_currentUserId == null) {
       throw Exception('Usuário não autenticado');
     }
 
-    final uid = _currentUserId!;
-    final seenPaths = <String>{};
-    final result = <Camera>[];
-
-    void addUnique(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-      final path = doc.reference.path;
-      if (seenPaths.contains(path)) return;
-      seenPaths.add(path);
-      result.add(_cameraFromGroupDoc(doc));
-    }
-
-    final ownSnap = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('cameras')
+    final snapshot = await _cameras
         .where('isPublic', isEqualTo: true)
+        .orderBy('name')
         .get();
-    for (final d in ownSnap.docs) {
-      addUnique(d);
-    }
 
-    try {
-      final groupSnap = await _firestore
-          .collectionGroup('cameras')
-          .where('isPublic', isEqualTo: true)
-          .get();
-      for (final d in groupSnap.docs) {
-        addUnique(d);
-      }
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') {
-        if (result.isEmpty) rethrow;
-        // Mantém só as suas câmeras públicas; collectionGroup continua bloqueada pelas regras.
-      } else {
-        rethrow;
-      }
-    }
-
-    return result;
+    return snapshot.docs.map(_cameraFromDoc).toList();
   }
 
-  Stream<List<Camera>> camerasStream() {
+  Stream<List<Camera>> camerasStream({required bool isAdmin}) {
     if (_currentUserId == null) {
       return Stream.error(Exception('Usuário não autenticado'));
     }
 
-    final uid = _currentUserId!;
-    return _getUserCamerasCollection().snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => _cameraFromUserDoc(doc, uid))
-          .toList();
-    });
+    final Stream<QuerySnapshot<Map<String, dynamic>>> stream;
+    if (isAdmin) {
+      stream = _cameras.orderBy('createdAt', descending: true).snapshots();
+    } else {
+      stream = _cameras
+          .where('ownerId', isEqualTo: _currentUserId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    }
+
+    return stream.map(
+      (snapshot) => snapshot.docs.map(_cameraFromDoc).toList(),
+    );
   }
 
   Future<void> _saveCacheLocal(List<Camera> cameras) async {
