@@ -165,7 +165,8 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     await platform.setProperty('video-sync', 'display-vdrop');
     await platform.setProperty('speed', '1');
     await platform.setProperty('demuxer-thread', 'yes');
-    await platform.setProperty('demuxer-lavf-analyzeduration', '500000');
+    // mpv usa segundos (não microsegundos como ffmpeg direto). Default ~0.5.
+    await platform.setProperty('demuxer-lavf-analyzeduration', '0.5');
   }
 
   /// RTSP: latência baixa; configuração separada do HLS.
