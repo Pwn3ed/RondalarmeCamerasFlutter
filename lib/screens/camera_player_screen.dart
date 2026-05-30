@@ -64,6 +64,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _transformationController?.removeListener(_onTransformationChanged);
     _transformationController?.dispose();
+    _controller?.removeListener(_onVideoPlayerUpdate);
     _controller?.dispose();
     super.dispose();
   }
@@ -136,6 +137,16 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     return '$label: $raw';
   }
 
+  void _onVideoPlayerUpdate() {
+    final controller = _controller;
+    if (controller == null || !_isInitialized || _usingMediaKitPlayer) return;
+    if (!controller.value.isInitialized || controller.value.hasError) return;
+    // Live HLS pode pausar sozinho após o primeiro frame; retoma se o usuário não pausou.
+    if (_isPlaying && !controller.value.isPlaying) {
+      controller.play();
+    }
+  }
+
   Future<void> _initializeExoPlayer() async {
     _usingMediaKitPlayer = false;
     _rtspPlayer = null;
@@ -147,15 +158,19 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
         _isInitialized = false;
       });
 
+      _controller?.removeListener(_onVideoPlayerUpdate);
       _controller?.dispose();
       _controller = vp.VideoPlayerController.networkUrl(
         Uri.parse(_camera.streamUrl),
+        formatHint: vp.VideoFormat.hls,
+        videoPlayerOptions: vp.VideoPlayerOptions(mixWithOthers: true),
       );
 
       await _controller!.initialize();
       if (!mounted) return;
-      _controller!.setLooping(true);
+      _controller!.setLooping(false);
       _controller!.setVolume(1.0);
+      _controller!.addListener(_onVideoPlayerUpdate);
 
       if (!mounted) return;
       setState(() {

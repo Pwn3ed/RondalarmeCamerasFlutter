@@ -75,14 +75,15 @@ class _RtspVideoViewState extends State<RtspVideoView> {
         logLevel: MPVLogLevel.error,
       ),
     );
-    // RTSP ao vivo: MediaCodec (MTK/Xiaomi) falha com width/height=0 antes do SPS.
-    // Decodificação por software evita "Could not open codec".
+    // RTSP ao vivo: decodificação por software + Surface cedo evita travar no 1º frame.
     _videoController = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: Platform.isAndroid ? !_isRtsp : true,
+        enableHardwareAcceleration: Platform.isAndroid && _isRtsp
+            ? false
+            : true,
         hwdec: Platform.isAndroid && _isRtsp ? 'no' : null,
-        androidAttachSurfaceAfterVideoParameters: _isRtsp ? true : null,
+        androidAttachSurfaceAfterVideoParameters: _isRtsp ? false : null,
       ),
     );
     widget.onPlayerCreated?.call(_player);
@@ -114,6 +115,14 @@ class _RtspVideoViewState extends State<RtspVideoView> {
         if (params.w != null && params.w! > 0) _succeed();
       }),
     );
+
+    _subscriptions.add(
+      _player.stream.playing.listen((playing) {
+        if (!_opened || _failed || playing) return;
+        _log('reprodução pausada inesperadamente — retomando');
+        unawaited(_player.play());
+      }),
+    );
   }
 
   Future<void> _configureLiveStreamOptions() async {
@@ -121,16 +130,17 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     if (platform is! NativePlayer) return;
 
     if (_isRtsp) {
+      await platform.setProperty('profile', 'low-latency');
       await platform.setProperty('rtsp-transport', 'tcp');
       await platform.setProperty('network-timeout', '20');
       await platform.setProperty('cache', 'no');
+      await platform.setProperty('cache-pause', 'no');
+      await platform.setProperty('untimed', 'yes');
       await platform.setProperty('demuxer-thread', 'yes');
-      // media_kit_video chama seek ao anexar Surface; live RTSP não é seekable.
-      await platform.setProperty('force-seekable', 'yes');
       _log(
         Platform.isAndroid
-            ? 'RTSP: tcp, force-seekable, hwdec=no'
-            : 'RTSP: tcp, force-seekable',
+            ? 'RTSP: low-latency, tcp, hwdec=no, surface early'
+            : 'RTSP: low-latency, tcp',
       );
     }
   }
