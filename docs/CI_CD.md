@@ -19,12 +19,60 @@ O CI básico foi adicionado no commit `7fb4573` (`ci: add GitHub Actions workflo
 - Plataforma: GitHub Actions
 - Runner: `ubuntu-latest`
 
+## Fluxo de branches (Git)
+
+| Branch | Papel |
+|--------|--------|
+| `main` | Código **oficial/estável** — só recebe merge quando o trabalho em `dev` estiver finalizado |
+| `dev` | Branch de **desenvolvimento** — commits do dia a dia vão aqui |
+
+### Fluxo de trabalho
+
+```text
+dev (trabalho diário)  →  PR ou merge  →  main (oficial)
+```
+
+1. Clonar e entrar na branch de desenvolvimento:
+
+```bash
+git clone https://github.com/Pwn3ed/RondalarmeCamerasFlutter.git
+cd RondalarmeCamerasFlutter
+git checkout dev
+```
+
+2. Desenvolver e commitar em `dev`:
+
+```bash
+git add .
+git commit -m "feat: descrição da mudança"
+git push origin dev
+```
+
+3. Quando estiver pronto para oficializar, abrir **Pull Request** `dev` → `main` no GitHub (ou merge local):
+
+```bash
+git checkout main
+git pull origin main
+git merge dev
+git push origin main
+```
+
+4. Após merge, sincronizar `dev` com `main` (opcional, evita drift):
+
+```bash
+git checkout dev
+git merge main
+git push origin dev
+```
+
+**Regra:** não commitar features em andamento diretamente em `main`. Use `dev` como branch padrão de trabalho.
+
 ## Quando o CI roda
 
 O workflow dispara em:
 
-- **Push** para a branch `main`
-- **Pull request** com destino à branch `main`
+- **Push** para `main` ou `dev`
+- **Pull request** com destino a `main` ou `dev`
 
 Não há jobs de release, deploy ou build de artefatos ainda.
 
@@ -167,7 +215,7 @@ Arquivos sensíveis que **não** devem entrar no CI/repo:
 
 ## Onde ver execuções
 
-Após push para `main` ou abertura de PR:
+Após push para `main`/`dev` ou abertura de PR:
 
 - GitHub → aba **Actions** do repositório
 - URL: https://github.com/Pwn3ed/RondalarmeCamerasFlutter/actions
@@ -176,5 +224,5 @@ Após push para `main` ou abertura de PR:
 
 1. Corrigir os 5 avisos `info` do analyzer e remover `--no-fatal-infos`
 2. Adicionar workflow de release Android (`.github/workflows/release-android.yml`)
-3. Configurar branch protection exigindo CI verde antes de merge em `main`
+3. Configurar branch protection em `main` (e opcionalmente `dev`) exigindo CI verde antes de merge
 4. (Opcional) adicionar cobertura com `flutter test --coverage`

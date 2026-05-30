@@ -7,6 +7,7 @@ Aplicativo Flutter para monitoramento de câmeras de segurança em tempo real.
 ```bash
 git clone https://github.com/pwn3ed/rondalarmecamerasflutter.git
 cd rondalarmecamerasflutter
+git checkout dev         # branch de desenvolvimento (main = oficial)
 fvm install && fvm use   # opcional: ver docs/CI_CD.md
 fvm flutter pub get
 fvm flutter run
