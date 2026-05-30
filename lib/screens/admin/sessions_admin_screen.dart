@@ -61,9 +61,9 @@ class _SessionsAdminScreenState extends State<SessionsAdminScreen> {
     );
     await _load();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sessão revogada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sessão revogada')));
     }
   }
 
@@ -94,10 +94,7 @@ class _SessionsAdminScreenState extends State<SessionsAdminScreen> {
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
       ),
       body: Column(
@@ -118,73 +115,76 @@ class _SessionsAdminScreenState extends State<SessionsAdminScreen> {
                     ),
                   )
                 : _sessions.isEmpty
-                    ? const Center(child: Text('Nenhuma sessão encontrada'))
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _sessions.length,
-                          itemBuilder: (context, index) {
-                            final s = _sessions[index];
-                            final isMulti = (multiDevice[s.uid] ?? 0) > 1;
+                ? const Center(child: Text('Nenhuma sessão encontrada'))
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _sessions.length,
+                      itemBuilder: (context, index) {
+                        final s = _sessions[index];
+                        final isMulti = (multiDevice[s.uid] ?? 0) > 1;
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                title: Text(s.deviceLabel),
-                                subtitle: Text(
-                                  'UID: ${s.uid}\n'
-                                  'Plataforma: ${s.platform} · v${s.appVersion}\n'
-                                  'Device ID: ${s.deviceId}\n'
-                                  'Último sinal: ${_formatDate(s.lastSeenAt)}'
-                                  '${s.endedAt != null ? '\nEncerrada: ${s.endReason}' : ''}',
-                                ),
-                                isThreeLine: true,
-                                leading: Icon(
-                                  s.isActive ? Icons.phone_android : Icons.block,
-                                  color: s.isActive
-                                      ? AppTheme.primaryGreen
-                                      : Colors.grey,
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isMulti && s.isActive)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        margin: const EdgeInsets.only(right: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.shade100,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Text(
-                                          'MULTI',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange,
-                                          ),
-                                        ),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            title: Text(s.deviceLabel),
+                            subtitle: Text(
+                              'UID: ${s.uid}\n'
+                              'Plataforma: ${s.platform} · v${s.appVersion}\n'
+                              'Device ID: ${s.deviceId}\n'
+                              'Último sinal: ${_formatDate(s.lastSeenAt)}'
+                              '${s.endedAt != null ? '\nEncerrada: ${s.endReason}' : ''}',
+                            ),
+                            isThreeLine: true,
+                            leading: Icon(
+                              s.isActive ? Icons.phone_android : Icons.block,
+                              color: s.isActive
+                                  ? AppTheme.primaryGreen
+                                  : Colors.grey,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isMulti && s.isActive)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'MULTI',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange,
                                       ),
-                                    if (s.isActive)
-                                      IconButton(
-                                        icon: const Icon(Icons.logout, color: Colors.red),
-                                        tooltip: 'Revogar sessão',
-                                        onPressed: () => _revokeSession(s),
-                                      ),
-                                  ],
-                                ),
-                                onLongPress: s.isActive
-                                    ? () => _showUserActions(context, s)
-                                    : null,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                                    ),
+                                  ),
+                                if (s.isActive)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.logout,
+                                      color: Colors.red,
+                                    ),
+                                    tooltip: 'Revogar sessão',
+                                    onPressed: () => _revokeSession(s),
+                                  ),
+                              ],
+                            ),
+                            onLongPress: s.isActive
+                                ? () => _showUserActions(context, s)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

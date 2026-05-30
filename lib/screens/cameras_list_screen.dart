@@ -111,90 +111,90 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
         index: _selectedIndex,
         children: [
           Consumer<CameraProvider>(
-        builder: (context, cameraProvider, child) {
-          if (cameraProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryGreen,
-              ),
-            );
-          }
-
-          if (cameraProvider.cameras.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.videocam_off,
-                    size: 80,
-                    color: AppTheme.lightGrey,
+            builder: (context, cameraProvider, child) {
+              if (cameraProvider.isLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.primaryGreen,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nenhuma câmera cadastrada',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppTheme.lightGrey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isAdmin
-                        ? 'Toque no botão + para adicionar uma câmera'
-                        : 'Aguarde o administrador cadastrar suas câmeras',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.lightGrey,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => cameraProvider.loadCameras(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: cameraProvider.cameras.length,
-              itemBuilder: (context, index) {
-                final camera = cameraProvider.cameras[index];
-                return _buildCameraCard(
-                  context,
-                  camera,
-                  cameraProvider,
-                  isAdmin: isAdmin,
                 );
-              },
-            ),
-          );
-        },
-      ),
+              }
+
+              if (cameraProvider.cameras.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.videocam_off,
+                        size: 80,
+                        color: AppTheme.lightGrey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nenhuma câmera cadastrada',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: AppTheme.lightGrey),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isAdmin
+                            ? 'Toque no botão + para adicionar uma câmera'
+                            : 'Aguarde o administrador cadastrar suas câmeras',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.lightGrey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => cameraProvider.loadCameras(),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: cameraProvider.cameras.length,
+                  itemBuilder: (context, index) {
+                    final camera = cameraProvider.cameras[index];
+                    return _buildCameraCard(
+                      context,
+                      camera,
+                      cameraProvider,
+                      isAdmin: isAdmin,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           const PublicCamerasScreen(showAppBar: false),
         ],
       ),
       floatingActionButton: isMyCamerasTab && isAdmin
           ? FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddCameraScreen(),
-            ),
-          );
-          if (!context.mounted) return;
-          if (result == true) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Câmera adicionada com sucesso!'),
-                backgroundColor: AppTheme.lightGreen,
-              ),
-            );
-          }
-        },
-        backgroundColor: AppTheme.lightGreen,
-        child: const Icon(Icons.add, color: AppTheme.primaryWhite),
-      ) : null,
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddCameraScreen(),
+                  ),
+                );
+                if (!context.mounted) return;
+                if (result == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Câmera adicionada com sucesso!'),
+                      backgroundColor: AppTheme.lightGreen,
+                    ),
+                  );
+                }
+              },
+              backgroundColor: AppTheme.lightGreen,
+              child: const Icon(Icons.add, color: AppTheme.primaryWhite),
+            )
+          : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -256,9 +256,8 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                       Expanded(
                         child: Text(
                           camera.name,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       if (camera.isPublic) ...[
@@ -266,14 +265,16 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                         Chip(
                           label: Text(
                             'Pública',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
                                   color: AppTheme.darkGreen,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           backgroundColor: AppTheme.softGreen,
                           side: BorderSide.none,
                         ),
@@ -283,9 +284,9 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   const SizedBox(height: 4),
                   Text(
                     camera.description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.lightGrey,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: AppTheme.lightGrey),
                   ),
                 ],
               ),
@@ -301,8 +302,8 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                             ? '${camera.serverIp}:${camera.serverPort}'
                             : camera.streamUrl,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.lightGrey,
-                            ),
+                          color: AppTheme.lightGrey,
+                        ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
@@ -321,8 +322,8 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                     Text(
                       camera.protocolLabel,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.lightGrey,
-                          ),
+                        color: AppTheme.lightGrey,
+                      ),
                     ),
                   ],
                 ),
@@ -333,9 +334,9 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                 children: [
                   Text(
                     'Criada em: ${_formatDate(camera.createdAt)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.lightGrey,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppTheme.lightGrey),
                   ),
                   Row(
                     children: [
@@ -371,7 +372,9 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                               await cameraProvider.loadCameras();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Câmera atualizada com sucesso!'),
+                                  content: Text(
+                                    'Câmera atualizada com sucesso!',
+                                  ),
                                   backgroundColor: AppTheme.lightGreen,
                                 ),
                               );
@@ -382,8 +385,11 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                           tooltip: 'Editar',
                         ),
                         IconButton(
-                          onPressed: () =>
-                              _showDeleteDialog(context, camera, cameraProvider),
+                          onPressed: () => _showDeleteDialog(
+                            context,
+                            camera,
+                            cameraProvider,
+                          ),
                           icon: const Icon(Icons.delete),
                           color: Colors.red,
                           tooltip: 'Excluir',
@@ -404,13 +410,19 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  void _showDeleteDialog(BuildContext context, Camera camera, CameraProvider cameraProvider) {
+  void _showDeleteDialog(
+    BuildContext context,
+    Camera camera,
+    CameraProvider cameraProvider,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Excluir Câmera'),
-          content: Text('Tem certeza que deseja excluir a câmera "${camera.name}"?'),
+          content: Text(
+            'Tem certeza que deseja excluir a câmera "${camera.name}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),

@@ -8,10 +8,7 @@ import 'camera_player_screen.dart';
 class PublicCamerasScreen extends StatefulWidget {
   final bool showAppBar;
 
-  const PublicCamerasScreen({
-    super.key,
-    this.showAppBar = true,
-  });
+  const PublicCamerasScreen({super.key, this.showAppBar = true});
 
   @override
   State<PublicCamerasScreen> createState() => _PublicCamerasScreenState();
@@ -32,9 +29,7 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
       builder: (context, cameraProvider, child) {
         if (cameraProvider.isLoadingPublic) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: AppTheme.primaryGreen,
-            ),
+            child: CircularProgressIndicator(color: AppTheme.primaryGreen),
           );
         }
 
@@ -57,8 +52,8 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
                         ? 'Não foi possível carregar'
                         : 'Nenhuma câmera pública',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.lightGrey,
-                        ),
+                      color: AppTheme.lightGrey,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   if (err != null) ...[
@@ -66,9 +61,9 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
                     Text(
                       err,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.darkGrey,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppTheme.darkGrey),
                     ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
@@ -88,8 +83,8 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
                         'Quando o administrador tornar câmeras públicas, elas aparecerão aqui.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.lightGrey,
-                            ),
+                          color: AppTheme.lightGrey,
+                        ),
                       ),
                     ),
                   ],

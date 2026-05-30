@@ -21,9 +21,10 @@ class UserService {
   }
 
   Stream<List<AppUser>> watchAll() {
-    return _users.orderBy('displayName').snapshots().map(
-          (snap) => snap.docs.map(AppUser.fromDoc).toList(),
-        );
+    return _users
+        .orderBy('displayName')
+        .snapshots()
+        .map((snap) => snap.docs.map(AppUser.fromDoc).toList());
   }
 
   Future<List<AppUser>> listForOwnerDropdown() async {
@@ -47,9 +48,7 @@ class UserService {
   }
 
   Future<void> updateLastLogin(String uid) async {
-    await _users.doc(uid).update({
-      'lastLoginAt': FieldValue.serverTimestamp(),
-    });
+    await _users.doc(uid).update({'lastLoginAt': FieldValue.serverTimestamp()});
   }
 
   Future<void> clearMustChangePassword(String uid) async {

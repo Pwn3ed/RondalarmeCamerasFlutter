@@ -164,7 +164,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
       });
       _play();
     } catch (e) {
-      String errorMsg = 'Erro ao conectar com a câmera (${_camera.protocolLabel})';
+      String errorMsg =
+          'Erro ao conectar com a câmera (${_camera.protocolLabel})';
       final err = e.toString();
       if (err.contains('CleartextNotPermittedException')) {
         errorMsg =
@@ -245,8 +246,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     setState(() => _isTogglingPublic = true);
     try {
       await context.read<CameraProvider>().updateCamera(
-            _camera.copyWith(isPublic: next),
-          );
+        _camera.copyWith(isPublic: next),
+      );
       if (!mounted) return;
       setState(() {
         _camera = _camera.copyWith(isPublic: next);
@@ -290,7 +291,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => EditCameraScreen(camera: _camera),
+                          builder: (context) =>
+                              EditCameraScreen(camera: _camera),
                         ),
                       );
                       if (!context.mounted) return;
@@ -346,8 +348,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               Text(
                 'Erro de Conexão',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppTheme.primaryWhite,
-                    ),
+                  color: AppTheme.primaryWhite,
+                ),
               ),
               const SizedBox(height: 8),
               Padding(
@@ -355,8 +357,8 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                 child: Text(
                   _errorMessage!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.primaryWhite,
-                      ),
+                    color: AppTheme.primaryWhite,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -432,7 +434,10 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               const SizedBox(height: 16),
               Text(
                 'Conectando via ${_camera.protocolLabel}…',
-                style: const TextStyle(color: AppTheme.primaryWhite, fontSize: 16),
+                style: const TextStyle(
+                  color: AppTheme.primaryWhite,
+                  fontSize: 16,
+                ),
               ),
             ],
           ),
@@ -497,13 +502,18 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           const SizedBox(width: 16),
           IconButton(
             onPressed: _reload,
-            icon: const Icon(Icons.refresh, size: 24, color: AppTheme.primaryWhite),
+            icon: const Icon(
+              Icons.refresh,
+              size: 24,
+              color: AppTheme.primaryWhite,
+            ),
           ),
           if (widget.canEdit) ...[
             const SizedBox(width: 16),
             IconButton(
-              onPressed:
-                  _isTogglingPublic || !_isInitialized ? null : _togglePublic,
+              onPressed: _isTogglingPublic || !_isInitialized
+                  ? null
+                  : _togglePublic,
               icon: _isTogglingPublic
                   ? const SizedBox(
                       width: 24,
@@ -555,9 +565,9 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
           Text(
             'Informações da Câmera',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryGreen,
-                ),
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryGreen,
+            ),
           ),
           const SizedBox(height: 12),
           _buildInfoRow('Nome', _camera.name),
@@ -598,17 +608,17 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.darkGrey,
-                  ),
+                fontWeight: FontWeight.w500,
+                color: AppTheme.darkGrey,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.primaryBlack,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.primaryBlack),
             ),
           ),
         ],

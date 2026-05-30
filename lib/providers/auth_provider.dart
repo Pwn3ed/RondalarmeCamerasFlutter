@@ -61,7 +61,8 @@ class AuthProvider with ChangeNotifier {
         await _authService.signOut();
         _appUser = null;
         _user = null;
-      } else if (_pendingSessionId == null && !_sessionService.hasActiveSession) {
+      } else if (_pendingSessionId == null &&
+          !_sessionService.hasActiveSession) {
         await _sessionService.startSession(user.uid);
       }
     } catch (_) {
@@ -103,7 +104,10 @@ class AuthProvider with ChangeNotifier {
 
       final appUser = await _userService.getByUid(uid);
       if (appUser == null) {
-        await _auditLog.log(action: 'login_blocked', metadata: {'reason': 'no_profile'});
+        await _auditLog.log(
+          action: 'login_blocked',
+          metadata: {'reason': 'no_profile'},
+        );
         await _authService.signOut();
         _errorMessage = 'Conta não habilitada. Procure o administrador.';
         _isLoading = false;
@@ -148,10 +152,7 @@ class AuthProvider with ChangeNotifier {
         return SignInResult.needsDeviceKick;
       }
 
-      await _auditLog.log(
-        action: 'login',
-        targetSessionId: sessionId,
-      );
+      await _auditLog.log(action: 'login', targetSessionId: sessionId);
 
       _pendingSessionId = null;
       _isLoading = false;
@@ -191,10 +192,7 @@ class AuthProvider with ChangeNotifier {
         );
       }
 
-      await _auditLog.log(
-        action: 'login',
-        targetSessionId: sessionId,
-      );
+      await _auditLog.log(action: 'login', targetSessionId: sessionId);
 
       _pendingSessionId = null;
       _isLoading = false;
@@ -227,7 +225,10 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final email = _user?.email ?? _appUser?.email ?? '';
-      await _authService.reauthenticate(email: email, password: currentPassword);
+      await _authService.reauthenticate(
+        email: email,
+        password: currentPassword,
+      );
       await _authService.updatePassword(newPassword);
       final uid = _user!.uid;
       await _userService.clearMustChangePassword(uid);

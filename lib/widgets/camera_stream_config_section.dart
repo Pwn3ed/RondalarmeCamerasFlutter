@@ -51,9 +51,9 @@ class CameraStreamConfigSection extends StatelessWidget {
             Text(
               'Conexão da câmera',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.primaryGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: AppTheme.primaryGreen,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<CameraProtocol>(
@@ -63,21 +63,16 @@ class CameraStreamConfigSection extends StatelessWidget {
                 prefixIcon: Icon(Icons.settings_input_component),
               ),
               items: CameraProtocol.values
-                  .map(
-                    (p) => DropdownMenuItem(
-                      value: p,
-                      child: Text(p.label),
-                    ),
-                  )
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
                   .toList(),
               onChanged: onProtocolChanged,
             ),
             const SizedBox(height: 8),
             Text(
               _protocolHint(),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.darkGrey,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.darkGrey),
             ),
             const SizedBox(height: 16),
             if (protocol == CameraProtocol.hls) ..._hlsFields(context),
@@ -93,17 +88,14 @@ class CameraStreamConfigSection extends StatelessWidget {
     return [
       Row(
         children: [
-          Text(
-            'Modo:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Modo:', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(width: 16),
           Text(
             isManualMode ? 'Manual' : 'Automático',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.primaryGreen,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: AppTheme.primaryGreen,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const Spacer(),
           Switch(
@@ -117,9 +109,9 @@ class CameraStreamConfigSection extends StatelessWidget {
       if (!isManualMode) ...[
         Text(
           'Preencha os campos para gerar a URL HLS automaticamente:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.darkGrey,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -181,9 +173,9 @@ class CameraStreamConfigSection extends StatelessWidget {
       if (isManualMode) ...[
         Text(
           'URL completa do stream HLS:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.darkGrey,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
         ),
         const SizedBox(height: 16),
         TextFormField(

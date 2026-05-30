@@ -80,11 +80,9 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     _videoController = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration:
-            Platform.isAndroid ? !_isRtsp : true,
+        enableHardwareAcceleration: Platform.isAndroid ? !_isRtsp : true,
         hwdec: Platform.isAndroid && _isRtsp ? 'no' : null,
-        androidAttachSurfaceAfterVideoParameters:
-            _isRtsp ? true : null,
+        androidAttachSurfaceAfterVideoParameters: _isRtsp ? true : null,
       ),
     );
     widget.onPlayerCreated?.call(_player);
@@ -208,9 +206,7 @@ class _RtspVideoViewState extends State<RtspVideoView> {
         if (!_opened)
           const ColoredBox(
             color: Colors.black54,
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: Center(child: CircularProgressIndicator()),
           ),
       ],
     );

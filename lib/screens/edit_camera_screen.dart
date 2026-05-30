@@ -58,8 +58,9 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
     _nameController = TextEditingController(text: cam.name);
     _descriptionController = TextEditingController(text: cam.description);
     _serverIpController = TextEditingController(text: cam.serverIp ?? '');
-    _serverPortController =
-        TextEditingController(text: cam.serverPort?.toString() ?? '');
+    _serverPortController = TextEditingController(
+      text: cam.serverPort?.toString() ?? '',
+    );
     _streamPathController = TextEditingController(
       text: cam.usesRtsp || cam.usesHttpFile ? '' : cam.streamPath,
     );
@@ -138,9 +139,9 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                       Text(
                         'Informações da Câmera',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -216,9 +217,9 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                       Text(
                         'Visibilidade',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       SwitchListTile(
@@ -226,9 +227,8 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         title: const Text('Câmera pública'),
                         subtitle: Text(
                           'Outros usuários podem ver esta câmera em Câmeras públicas.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.darkGrey,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.darkGrey),
                         ),
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
@@ -248,9 +248,9 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                       Text(
                         'Informações do Sistema',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _buildInfoRow('ID da Câmera', widget.camera.id),
@@ -280,14 +280,17 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.primaryWhite,
+                          ),
                         ),
                       )
                     : const Text(
                         'Atualizar Câmera',
-                        style:
-                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
               ),
               const SizedBox(height: 16),
@@ -368,17 +371,17 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.darkGrey,
-                  ),
+                fontWeight: FontWeight.w500,
+                color: AppTheme.darkGrey,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.primaryBlack,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.primaryBlack),
             ),
           ),
         ],

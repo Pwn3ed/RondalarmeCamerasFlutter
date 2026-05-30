@@ -97,7 +97,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: () => _load(refresh: true)),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _load(refresh: true),
+          ),
         ],
       ),
       body: Column(
@@ -113,10 +116,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               ),
               items: _actions
                   .map(
-                    (a) => DropdownMenuItem(
-                      value: a,
-                      child: Text(a ?? 'Todas'),
-                    ),
+                    (a) =>
+                        DropdownMenuItem(value: a, child: Text(a ?? 'Todas')),
                   )
                   .toList(),
               onChanged: (v) {
@@ -128,65 +129,69 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryGreen,
+                    ),
                   )
                 : _logs.isEmpty
-                    ? RefreshIndicator(
-                        onRefresh: () => _load(refresh: true),
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(
-                              height: 300,
-                              child: Center(child: Text('Nenhum log encontrado')),
+                ? RefreshIndicator(
+                    onRefresh: () => _load(refresh: true),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(
+                          height: 300,
+                          child: Center(child: Text('Nenhum log encontrado')),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => _load(refresh: true),
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _logs.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == _logs.length) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: _loadingMore
+                                  ? const CircularProgressIndicator()
+                                  : TextButton(
+                                      onPressed: _loadMore,
+                                      child: const Text('Carregar mais'),
+                                    ),
                             ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () => _load(refresh: true),
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: _logs.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == _logs.length) {
-                              return Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Center(
-                                  child: _loadingMore
-                                      ? const CircularProgressIndicator()
-                                      : TextButton(
-                                          onPressed: _loadMore,
-                                          child: const Text('Carregar mais'),
-                                        ),
-                                ),
-                              );
-                            }
+                          );
+                        }
 
-                            final log = _logs[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                        final log = _logs[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              log.action,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                               ),
-                              child: ListTile(
-                                title: Text(
-                                  log.action,
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: Text(
-                                  '${log.actorEmail}\n'
-                                  '${_formatDate(log.createdAt)}'
-                                  '${log.targetUid != null ? '\nAlvo: ${log.targetUid}' : ''}',
-                                ),
-                                isThreeLine: true,
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => _showDetail(log),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                            subtitle: Text(
+                              '${log.actorEmail}\n'
+                              '${_formatDate(log.createdAt)}'
+                              '${log.targetUid != null ? '\nAlvo: ${log.targetUid}' : ''}',
+                            ),
+                            isThreeLine: true,
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _showDetail(log),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

@@ -148,31 +148,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Rondalarme Câmeras',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.primaryGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppTheme.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Image.asset(
-                    'logo.png',
-                    height: 180,
-                    fit: BoxFit.contain,
-                  ),
+                  Image.asset('logo.png', height: 180, fit: BoxFit.contain),
                   const SizedBox(height: 24),
                   Text(
                     'Proteja o que importa. Monitore suas câmeras em qualquer lugar.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.darkGrey,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.darkGrey),
                   ),
                   const SizedBox(height: 48),
                   Text(
                     'Digite suas credenciais',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.darkGrey,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.darkGrey),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

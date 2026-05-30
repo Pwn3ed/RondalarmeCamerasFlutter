@@ -103,7 +103,9 @@ class UsersAdminScreen extends StatelessWidget {
                         ),
                         PopupMenuItem(
                           value: u.disabled ? 'enable' : 'disable',
-                          child: Text(u.disabled ? 'Reativar conta' : 'Desabilitar conta'),
+                          child: Text(
+                            u.disabled ? 'Reativar conta' : 'Desabilitar conta',
+                          ),
                         ),
                       ],
                     ),
@@ -130,14 +132,13 @@ class UsersAdminScreen extends StatelessWidget {
     switch (action) {
       case 'force_change':
         await userService.setMustChangePassword(user.uid, true);
-        await auditLog.log(
-          action: 'force_change_set',
-          targetUid: user.uid,
-        );
+        await auditLog.log(action: 'force_change_set', targetUid: user.uid);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Usuário precisará trocar a senha no próximo login'),
+              content: Text(
+                'Usuário precisará trocar a senha no próximo login',
+              ),
               backgroundColor: AppTheme.lightGreen,
             ),
           );
@@ -146,10 +147,7 @@ class UsersAdminScreen extends StatelessWidget {
       case 'reset_email':
         final ok = await auth.resetPassword(user.email);
         if (ok) {
-          await auditLog.log(
-            action: 'reset_sent',
-            targetUid: user.uid,
-          );
+          await auditLog.log(action: 'reset_sent', targetUid: user.uid);
         }
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -169,22 +167,16 @@ class UsersAdminScreen extends StatelessWidget {
           endReason: 'revoked_by_admin',
           revokedBy: auth.user?.uid,
         );
-        await auditLog.log(
-          action: 'user_disabled',
-          targetUid: user.uid,
-        );
+        await auditLog.log(action: 'user_disabled', targetUid: user.uid);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Conta desabilitada')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Conta desabilitada')));
         }
         break;
       case 'enable':
         await userService.setDisabled(user.uid, false);
-        await auditLog.log(
-          action: 'user_enabled',
-          targetUid: user.uid,
-        );
+        await auditLog.log(action: 'user_enabled', targetUid: user.uid);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

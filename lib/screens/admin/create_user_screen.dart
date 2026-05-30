@@ -240,17 +240,17 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             Text(
               'Conta criada com sucesso!',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Anote a senha temporária abaixo. O cliente precisará trocá-la no primeiro acesso.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.darkGrey,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
             ),
             const SizedBox(height: 32),
             Container(
@@ -263,18 +263,18 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                 _createdPassword!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: _createdPassword!));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Senha copiada')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Senha copiada')));
               },
               icon: const Icon(Icons.copy),
               label: const Text('Copiar senha'),

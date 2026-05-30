@@ -11,7 +11,7 @@ class CameraService {
   Future<List<Camera>> getAllCameras() async {
     final prefs = await SharedPreferences.getInstance();
     final camerasJson = prefs.getStringList(_storageKey) ?? [];
-    
+
     return camerasJson
         .map((json) => Camera.fromJson(jsonDecode(json)))
         .toList();
@@ -43,7 +43,7 @@ class CameraService {
 
     final cameras = await getAllCameras();
     cameras.add(camera);
-    
+
     await _saveCameras(cameras);
     return camera;
   }
@@ -51,7 +51,7 @@ class CameraService {
   Future<void> updateCamera(Camera camera) async {
     final cameras = await getAllCameras();
     final index = cameras.indexWhere((c) => c.id == camera.id);
-    
+
     if (index != -1) {
       cameras[index] = camera;
       await _saveCameras(cameras);
@@ -67,9 +67,11 @@ class CameraService {
   Future<void> toggleCameraStatus(String id) async {
     final cameras = await getAllCameras();
     final index = cameras.indexWhere((c) => c.id == id);
-    
+
     if (index != -1) {
-      cameras[index] = cameras[index].copyWith(isActive: !cameras[index].isActive);
+      cameras[index] = cameras[index].copyWith(
+        isActive: !cameras[index].isActive,
+      );
       await _saveCameras(cameras);
     }
   }
@@ -79,7 +81,7 @@ class CameraService {
     final camerasJson = cameras
         .map((camera) => jsonEncode(camera.toJson()))
         .toList();
-    
+
     await prefs.setStringList(_storageKey, camerasJson);
   }
 }

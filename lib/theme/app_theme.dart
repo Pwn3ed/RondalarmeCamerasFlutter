@@ -6,11 +6,11 @@ class AppTheme {
   static const Color darkGreen = Color(0xFF1B5E20);
   static const Color accentGreen = Color(0xFF66BB6A);
   static const Color softGreen = Color(0xFFA5D6A7);
-  
+
   static const Color primaryBlack = Color(0xFF212121);
   static const Color darkGrey = Color(0xFF424242);
   static const Color lightGrey = Color(0xFF757575);
-  
+
   static const Color primaryWhite = Color(0xFFFFFFFF);
   static const Color offWhite = Color(0xFFFAFAFA);
   static const Color lightGreyWhite = Color(0xFFF5F5F5);
@@ -44,9 +44,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: primaryWhite,
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
@@ -55,9 +53,7 @@ class AppTheme {
           backgroundColor: primaryGreen,
           foregroundColor: primaryWhite,
           elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
@@ -87,7 +83,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Colors.red),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
 
       textTheme: const TextTheme(
@@ -116,14 +115,8 @@ class AppTheme {
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
-        bodyLarge: TextStyle(
-          color: primaryBlack,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: primaryBlack,
-          fontSize: 14,
-        ),
+        bodyLarge: TextStyle(color: primaryBlack, fontSize: 16),
+        bodyMedium: TextStyle(color: primaryBlack, fontSize: 14),
       ),
 
       scaffoldBackgroundColor: offWhite,

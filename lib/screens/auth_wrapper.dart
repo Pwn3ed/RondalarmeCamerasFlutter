@@ -26,9 +26,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const Scaffold(
             backgroundColor: AppTheme.offWhite,
             body: Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryGreen,
-              ),
+              child: CircularProgressIndicator(color: AppTheme.primaryGreen),
             ),
           );
         }

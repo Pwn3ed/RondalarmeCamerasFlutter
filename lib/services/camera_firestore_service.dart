@@ -149,15 +149,14 @@ class CameraFirestoreService {
           .snapshots();
     }
 
-    return stream.map(
-      (snapshot) => snapshot.docs.map(_cameraFromDoc).toList(),
-    );
+    return stream.map((snapshot) => snapshot.docs.map(_cameraFromDoc).toList());
   }
 
   Future<void> _saveCacheLocal(List<Camera> cameras) async {
     final prefs = await SharedPreferences.getInstance();
-    final camerasJson =
-        cameras.map((camera) => jsonEncode(camera.toJson())).toList();
+    final camerasJson = cameras
+        .map((camera) => jsonEncode(camera.toJson()))
+        .toList();
     await prefs.setStringList(_localCacheKey, camerasJson);
   }
 
@@ -165,7 +164,9 @@ class CameraFirestoreService {
     final prefs = await SharedPreferences.getInstance();
     final camerasJson = prefs.getStringList(_localCacheKey) ?? [];
     return camerasJson
-        .map((json) => Camera.fromJson(jsonDecode(json) as Map<String, dynamic>))
+        .map(
+          (json) => Camera.fromJson(jsonDecode(json) as Map<String, dynamic>),
+        )
         .toList();
   }
 

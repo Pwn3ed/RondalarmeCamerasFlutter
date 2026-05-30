@@ -112,9 +112,9 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                       Text(
                         'Informações da Câmera',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -171,9 +171,8 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         title: const Text('Tornar câmera pública'),
                         subtitle: Text(
                           'Outros usuários poderão ver e reproduzir em Câmeras públicas.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.darkGrey,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppTheme.darkGrey),
                         ),
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
@@ -213,14 +212,17 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppTheme.primaryWhite),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.primaryWhite,
+                          ),
                         ),
                       )
                     : const Text(
                         'Salvar Câmera',
-                        style:
-                            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
               ),
             ],

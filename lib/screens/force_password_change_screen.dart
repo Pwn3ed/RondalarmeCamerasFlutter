@@ -86,9 +86,9 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                   Text(
                     'Por segurança, defina uma nova senha antes de continuar.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.darkGrey,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.darkGrey),
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
@@ -140,8 +140,8 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                               ? Icons.visibility
                               : Icons.visibility_off,
                         ),
-                        onPressed: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                       ),
                     ),
                     validator: (v) {

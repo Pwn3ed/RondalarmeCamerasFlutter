@@ -77,9 +77,11 @@ class Camera {
     }
     final rtsp = (json['rtspUrl'] as String?)?.trim();
     if (rtsp != null && rtsp.isNotEmpty) {
-      final hasHlsServer = json['serverIp'] != null &&
+      final hasHlsServer =
+          json['serverIp'] != null &&
           (json['serverIp'] as String).toString().trim().isNotEmpty;
-      final manualHls = json['isManualMode'] == true &&
+      final manualHls =
+          json['isManualMode'] == true &&
           path.isNotEmpty &&
           !path.toLowerCase().startsWith('rtsp://');
       if (!hasHlsServer && !manualHls) return CameraProtocol.rtsp;
@@ -97,8 +99,7 @@ class Camera {
       'serverIp': serverIp,
       'serverPort': serverPort,
       'streamPath': streamPath,
-      if (trimmedRtsp != null && trimmedRtsp.isNotEmpty)
-        'rtspUrl': trimmedRtsp,
+      if (trimmedRtsp != null && trimmedRtsp.isNotEmpty) 'rtspUrl': trimmedRtsp,
       'isActive': isActive,
       'isManualMode': isManualMode,
       'isPublic': isPublic,
@@ -117,8 +118,8 @@ class Camera {
       serverPort: json['serverPort'] is int
           ? json['serverPort'] as int
           : (json['serverPort'] != null
-              ? int.tryParse(json['serverPort'].toString())
-              : null),
+                ? int.tryParse(json['serverPort'].toString())
+                : null),
       streamPath: json['streamPath'] as String? ?? '',
       rtspUrl: json['rtspUrl'] as String?,
       isActive: json['isActive'] ?? true,
@@ -157,8 +158,8 @@ class Camera {
       rtspUrl: clearRtspUrl
           ? null
           : (rtspUrl != null
-              ? (rtspUrl.isEmpty ? null : rtspUrl)
-              : this.rtspUrl),
+                ? (rtspUrl.isEmpty ? null : rtspUrl)
+                : this.rtspUrl),
       isActive: isActive ?? this.isActive,
       isManualMode: isManualMode ?? this.isManualMode,
       isPublic: isPublic ?? this.isPublic,

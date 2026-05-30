@@ -163,11 +163,7 @@ class SessionService with WidgetsBindingObserver {
   }) async {
     final active = await getActiveSessionsForUser(uid);
     for (final s in active) {
-      await endSessionById(
-        s.id,
-        endReason: endReason,
-        revokedBy: revokedBy,
-      );
+      await endSessionById(s.id, endReason: endReason, revokedBy: revokedBy);
     }
   }
 
@@ -175,8 +171,10 @@ class SessionService with WidgetsBindingObserver {
     bool activeOnly = false,
     int limit = 100,
   }) async {
-    Query<Map<String, dynamic>> query =
-        _sessions.orderBy('lastSeenAt', descending: true);
+    Query<Map<String, dynamic>> query = _sessions.orderBy(
+      'lastSeenAt',
+      descending: true,
+    );
 
     if (activeOnly) {
       query = _sessions
