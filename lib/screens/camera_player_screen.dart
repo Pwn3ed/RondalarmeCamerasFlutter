@@ -314,24 +314,26 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               onError: _onMediaKitError,
             ),
             if (!_isInitialized)
-              Container(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: AppTheme.lightGreen,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Conectando via ${_camera.protocolLabel}…',
-                        style: const TextStyle(
-                          color: AppTheme.primaryWhite,
-                          fontSize: 16,
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black54,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: AppTheme.lightGreen,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          'Conectando via ${_camera.protocolLabel}…',
+                          style: const TextStyle(
+                            color: AppTheme.primaryWhite,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

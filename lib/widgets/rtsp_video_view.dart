@@ -253,11 +253,6 @@ class _RtspVideoViewState extends State<RtspVideoView> {
           fit: BoxFit.contain,
           controls: NoVideoControls,
         ),
-        if (!_opened)
-          const ColoredBox(
-            color: Colors.black54,
-            child: Center(child: CircularProgressIndicator()),
-          ),
       ],
     );
   }
