@@ -35,11 +35,12 @@ class Camera {
 
   bool get usesHttpFile => protocol == CameraProtocol.httpFile;
 
-  /// RTSP e HTTP (MP4/MKV) usam media_kit; HLS usa video_player.
-  bool get usesMediaKitPlayer => usesRtsp || usesHttpFile;
+  /// RTSP, HLS (RTMP/Intelbras) e HTTP (MP4/MKV) usam media_kit.
+  bool get usesMediaKitPlayer =>
+      usesRtsp || usesHttpFile || protocol == CameraProtocol.hls;
 
-  /// Usa [video_player] (somente HLS).
-  bool get usesExoPlayer => protocol == CameraProtocol.hls;
+  /// Legado: HLS migrou para media_kit; mantido para compatibilidade de testes/API.
+  bool get usesExoPlayer => false;
 
   String get rtspPlaybackUrl {
     final url = rtspUrl?.trim();

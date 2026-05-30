@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-/// Reproduz stream via media_kit (libmpv): RTSP, HTTP MP4/MKV, etc.
+/// Reproduz stream via media_kit (libmpv): HLS, RTSP, HTTP MP4/MKV, etc.
 class RtspVideoView extends StatefulWidget {
   final String url;
   final void Function(Player player)? onPlayerCreated;
@@ -30,10 +30,21 @@ class _RtspVideoViewState extends State<RtspVideoView> {
   late final VideoController _videoController;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Timer? _connectTimeout;
+  Timer? _stallWatchdog;
   bool _opened = false;
   bool _failed = false;
+  int _bufferingStallTicks = 0;
 
-  bool get _isRtsp => widget.url.trim().toLowerCase().startsWith('rtsp://');
+  String get _url => widget.url.trim();
+
+  bool get _isRtsp => _url.toLowerCase().startsWith('rtsp://');
+
+  bool get _isHls {
+    final lower = _url.toLowerCase();
+    return lower.contains('.m3u8') || lower.contains('/hls/');
+  }
+
+  bool get _isLiveStream => _isRtsp || _isHls;
 
   void _log(String message) {
     if (kDebugMode) {
@@ -41,8 +52,7 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     }
   }
 
-  /// Erros comuns em RTSP ao vivo que não devem encerrar a reprodução.
-  /// O media_kit_video faz seek ao redimensionar a Surface; em live isso falha.
+  /// Erros comuns em streams ao vivo que não devem encerrar a reprodução.
   bool _isBenignLiveStreamError(String message) {
     final lower = message.toLowerCase();
     return lower.contains('cannot seek') ||
@@ -75,15 +85,14 @@ class _RtspVideoViewState extends State<RtspVideoView> {
         logLevel: MPVLogLevel.error,
       ),
     );
-    // RTSP ao vivo: decodificação por software + Surface cedo evita travar no 1º frame.
+
+    final useSoftwareRtsp = Platform.isAndroid && _isRtsp;
     _videoController = VideoController(
       _player,
       configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: Platform.isAndroid && _isRtsp
-            ? false
-            : true,
-        hwdec: Platform.isAndroid && _isRtsp ? 'no' : null,
-        androidAttachSurfaceAfterVideoParameters: _isRtsp ? false : null,
+        enableHardwareAcceleration: !useSoftwareRtsp,
+        hwdec: useSoftwareRtsp ? 'no' : null,
+        androidAttachSurfaceAfterVideoParameters: _isLiveStream ? false : null,
       ),
     );
     widget.onPlayerCreated?.call(_player);
@@ -123,25 +132,60 @@ class _RtspVideoViewState extends State<RtspVideoView> {
         unawaited(_player.play());
       }),
     );
+
+    _subscriptions.add(
+      _player.stream.completed.listen((_) {
+        if (!_isLiveStream || _failed || !mounted) return;
+        _log('stream ao vivo encerrou — reabrindo');
+        unawaited(_reopenStream());
+      }),
+    );
+
+    _subscriptions.add(
+      _player.stream.buffering.listen((buffering) {
+        if (!_opened || _failed || !_isLiveStream) return;
+        if (buffering) {
+          _bufferingStallTicks++;
+          if (_bufferingStallTicks >= 8) {
+            _bufferingStallTicks = 0;
+            _log('buffer travado — reabrindo stream');
+            unawaited(_reopenStream());
+          }
+          return;
+        }
+        _bufferingStallTicks = 0;
+      }),
+    );
   }
 
-  Future<void> _configureLiveStreamOptions() async {
+  Future<void> _configureStreamOptions() async {
     final platform = _player.platform;
     if (platform is! NativePlayer) return;
 
-    if (_isRtsp) {
+    if (_isLiveStream) {
       await platform.setProperty('profile', 'low-latency');
-      await platform.setProperty('rtsp-transport', 'tcp');
-      await platform.setProperty('network-timeout', '20');
       await platform.setProperty('cache', 'no');
       await platform.setProperty('cache-pause', 'no');
       await platform.setProperty('untimed', 'yes');
+      await platform.setProperty('demuxer-lavf-analyzeduration', '0');
+      await platform.setProperty('demuxer-readahead-secs', '0');
+      await platform.setProperty('video-sync', 'display-resample');
       await platform.setProperty('demuxer-thread', 'yes');
+    }
+
+    if (_isRtsp) {
+      await platform.setProperty('rtsp-transport', 'tcp');
+      await platform.setProperty('network-timeout', '20');
       _log(
         Platform.isAndroid
-            ? 'RTSP: low-latency, tcp, hwdec=no, surface early'
-            : 'RTSP: low-latency, tcp',
+            ? 'RTSP live: low-latency, tcp, hwdec=no'
+            : 'RTSP live: low-latency, tcp',
       );
+      return;
+    }
+
+    if (_isHls) {
+      _log('HLS live: low-latency, surface early');
     }
   }
 
@@ -149,23 +193,19 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     _connectTimeout?.cancel();
     _connectTimeout = Timer(const Duration(seconds: 45), () {
       if (!_opened && !_failed && mounted) {
-        _fail(
-          _isRtsp
-              ? 'Tempo esgotado ao conectar (RTSP). Confirme URL, MediaMTX ativo e porta 8554 no firewall.'
-              : 'Tempo esgotado ao carregar o vídeo.',
-        );
+        _fail(_timeoutMessage());
       }
     });
 
     try {
-      await _configureLiveStreamOptions();
-      await _player.open(Media(widget.url), play: true);
-      if (!_isRtsp) {
+      await _configureStreamOptions();
+      await _player.open(Media(_url), play: true);
+      if (!_isLiveStream) {
         _succeed();
       }
     } catch (e) {
       final text = e.toString();
-      if (_isRtsp && _isBenignLiveStreamError(text)) {
+      if (_isLiveStream && _isBenignLiveStreamError(text)) {
         _log('open ignorado (live): $text');
         return;
       }
@@ -174,16 +214,49 @@ class _RtspVideoViewState extends State<RtspVideoView> {
     }
   }
 
+  Future<void> _reopenStream() async {
+    if (_failed || !mounted) return;
+    try {
+      await _configureStreamOptions();
+      await _player.open(Media(_url), play: true);
+    } catch (e) {
+      _log('reopen falhou: $e');
+    }
+  }
+
+  String _timeoutMessage() {
+    if (_isRtsp) {
+      return 'Tempo esgotado ao conectar (RTSP). Confirme URL, MediaMTX ativo e porta 8554 no firewall.';
+    }
+    if (_isHls) {
+      return 'Tempo esgotado ao conectar (HLS). Confirme servidor, caminho e se o stream .m3u8 está ativo.';
+    }
+    return 'Tempo esgotado ao carregar o vídeo.';
+  }
+
   void _succeed() {
     if (_opened || _failed || !mounted) return;
     _connectTimeout?.cancel();
     setState(() => _opened = true);
     widget.onReady?.call();
+    _startLiveWatchdog();
+  }
+
+  void _startLiveWatchdog() {
+    if (!_isLiveStream) return;
+    _stallWatchdog?.cancel();
+    _stallWatchdog = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!_opened || _failed || !mounted) return;
+      if (!_player.state.playing) {
+        unawaited(_player.play());
+      }
+    });
   }
 
   void _fail(String message) {
     if (_failed || !mounted) return;
     _connectTimeout?.cancel();
+    _stallWatchdog?.cancel();
     setState(() => _failed = true);
     widget.onError?.call(message);
   }
@@ -191,6 +264,7 @@ class _RtspVideoViewState extends State<RtspVideoView> {
   @override
   void dispose() {
     _connectTimeout?.cancel();
+    _stallWatchdog?.cancel();
     for (final sub in _subscriptions) {
       sub.cancel();
     }

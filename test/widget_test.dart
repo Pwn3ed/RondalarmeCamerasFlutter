@@ -96,6 +96,26 @@ void main() {
     expect(restored.protocol, CameraProtocol.httpFile);
   });
 
+  test('Camera HLS protocol uses media_kit and builds Intelbras URL', () {
+    final camera = Camera(
+      id: 'cam4',
+      name: 'Portao',
+      description: '',
+      protocol: CameraProtocol.hls,
+      serverIp: '192.168.0.1',
+      serverPort: 8888,
+      streamPath: 'app/test',
+      createdAt: DateTime.utc(2024, 6, 15),
+    );
+
+    expect(camera.usesMediaKitPlayer, isTrue);
+    expect(camera.usesExoPlayer, isFalse);
+    expect(
+      camera.streamUrl,
+      'http://192.168.0.1:8888/app/test/video1_stream.m3u8',
+    );
+  });
+
   test('Camera.fromJson defaults isPublic to false when absent', () {
     final restored = Camera.fromJson({
       'id': 'x',
