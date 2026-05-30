@@ -43,11 +43,54 @@ Se qualquer passo falhar, o workflow inteiro falha.
 
 ## Decisões importantes (contexto para manutenção)
 
-### Versão do Flutter
+### Versão fixa do Flutter (política do projeto)
 
-O workflow fixa **Flutter 3.35.5**, alinhado ao ambiente local usado na implementação e compatível com o SDK declarado no `pubspec.yaml` (`sdk: ^3.9.0`).
+**Decisão:** o projeto usa Flutter **3.35.5** de forma intencional. Não é necessário atualizar o Flutter sempre que o CLI avisar que há versão nova.
 
-Ao atualizar o Flutter do projeto, atualize também `flutter-version` em `.github/workflows/ci.yml`.
+Motivos:
+
+- Builds reproduzíveis (dev local = CI = clone do repo)
+- Menos risco de quebra por mudanças de API, lints ou dependências
+- Upgrades passam a ser **eventos planejados**, não rotina contínua
+
+Onde a versão está definida:
+
+| Arquivo | Função |
+|---------|--------|
+| `.fvm/fvm_config.json` | Versão oficial para quem usa [FVM](https://fvm.app) |
+| `.fvmrc` | Atalho da mesma versão (FVM lê este arquivo) |
+| `.github/workflows/ci.yml` | Versão usada no GitHub Actions |
+| `.vscode/settings.json` | IDE aponta para `.fvm/flutter_sdk` quando FVM está instalado |
+
+Compatível com `pubspec.yaml` (`sdk: ^3.9.0`).
+
+#### Setup local com FVM (recomendado)
+
+```bash
+# instalar FVM uma vez (ex.: dart pub global activate fvm)
+fvm install
+fvm use
+fvm flutter pub get
+fvm flutter run
+```
+
+Sem FVM, use Flutter **3.35.5** globalmente e ignore avisos de upgrade até uma atualização planejada.
+
+#### Quando atualizar (checklist)
+
+Atualizar só quando houver motivo claro, por exemplo:
+
+- exigência de loja (Android `targetSdk`, Xcode mínimo)
+- patch de segurança relevante
+- dependência que exige Flutter mais novo
+- bug corrigido apenas na versão nova
+
+Procedimento de upgrade (branch separada):
+
+1. Escolher nova versão e testar localmente (`flutter upgrade`, analyze, test, app manual)
+2. Atualizar **todos** os arquivos da tabela acima para a mesma versão
+3. Rodar `fvm install` se usar FVM
+4. Abrir PR e validar CI antes de merge em `main`
 
 ### `--no-fatal-infos` no analyze
 
@@ -64,6 +107,13 @@ No commit que introduziu o CI, 22 arquivos em `lib/` foram formatados com `dart 
 Na raiz do projeto:
 
 ```bash
+# com FVM:
+fvm flutter pub get
+fvm dart format --output=none --set-exit-if-changed .
+fvm flutter analyze --no-fatal-infos
+fvm flutter test
+
+# sem FVM (Flutter 3.35.5 global):
 flutter pub get
 dart format --output=none --set-exit-if-changed .
 flutter analyze --no-fatal-infos
@@ -96,6 +146,9 @@ Detalhes de assinatura Android: o `android/app/build.gradle.kts` ainda usa **deb
 | Arquivo | Papel |
 |---------|--------|
 | `.github/workflows/ci.yml` | Definição do pipeline CI |
+| `.fvm/fvm_config.json` | Versão fixa do Flutter (FVM) |
+| `.fvmrc` | Versão fixa do Flutter (atalho FVM) |
+| `.vscode/settings.json` | SDK Flutter da IDE via FVM |
 | `pubspec.yaml` | Dependências e versão do SDK Dart |
 | `analysis_options.yaml` | Regras de lint (`flutter_lints`) |
 | `test/widget_test.dart` | Testes executados no CI |

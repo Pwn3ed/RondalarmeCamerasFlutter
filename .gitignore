@@ -23,6 +23,11 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+# FVM (versão fixa do Flutter — ver docs/CI_CD.md)
+.fvm/flutter_sdk
+.fvm/versions
+.fvm/release
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
