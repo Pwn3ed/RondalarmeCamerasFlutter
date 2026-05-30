@@ -8,9 +8,7 @@ import 'add_camera_screen.dart';
 import 'edit_camera_screen.dart';
 import 'camera_player_screen.dart';
 import 'public_cameras_screen.dart';
-import 'admin/users_admin_screen.dart';
-import 'admin/sessions_admin_screen.dart';
-import 'admin/audit_logs_screen.dart';
+import 'settings_screen.dart';
 
 class CamerasListScreen extends StatefulWidget {
   const CamerasListScreen({super.key});
@@ -35,77 +33,17 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
     final isMyCamerasTab = _selectedIndex == 0;
     final isAdmin = context.watch<AuthProvider>().isAdmin;
 
+    final appBarTitle = switch (_selectedIndex) {
+      0 => isAdmin ? 'Câmeras' : 'Minhas câmeras',
+      1 => 'Câmeras públicas',
+      _ => 'Configurações',
+    };
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          isMyCamerasTab
-              ? (isAdmin ? 'Câmeras' : 'Minhas câmeras')
-              : 'Câmeras públicas',
-        ),
+        title: Text(appBarTitle),
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: AppTheme.primaryWhite,
-        actions: [
-          if (isAdmin)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.admin_panel_settings),
-              tooltip: 'Administração',
-              onSelected: (value) {
-                Widget screen;
-                switch (value) {
-                  case 'users':
-                    screen = const UsersAdminScreen();
-                    break;
-                  case 'sessions':
-                    screen = const SessionsAdminScreen();
-                    break;
-                  case 'audit':
-                    screen = const AuditLogsScreen();
-                    break;
-                  default:
-                    return;
-                }
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => screen),
-                );
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'users', child: Text('Usuários')),
-                PopupMenuItem(value: 'sessions', child: Text('Sessões')),
-                PopupMenuItem(value: 'audit', child: Text('Logs')),
-              ],
-            ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: const Text('Sair'),
-                  content: const Text('Deseja realmente sair?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, false),
-                      child: const Text('Cancelar'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, true),
-                      child: const Text('Sair'),
-                    ),
-                  ],
-                ),
-              );
-
-              if (!context.mounted) return;
-              if (confirm == true) {
-                final cameraProvider = context.read<CameraProvider>();
-                final authProvider = context.read<AuthProvider>();
-                await authProvider.signOut(cameraProvider);
-              }
-            },
-            tooltip: 'Sair',
-          ),
-        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -170,6 +108,7 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
             },
           ),
           const PublicCamerasScreen(showAppBar: false),
+          const SettingsScreen(),
         ],
       ),
       floatingActionButton: isMyCamerasTab && isAdmin
@@ -214,6 +153,11 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
             icon: Icon(Icons.public_outlined),
             selectedIcon: Icon(Icons.public),
             label: 'Câmeras públicas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Configurações',
           ),
         ],
       ),
