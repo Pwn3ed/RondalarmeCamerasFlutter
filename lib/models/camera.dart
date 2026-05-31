@@ -12,6 +12,9 @@ class Camera {
   final bool isActive;
   final bool isManualMode;
   final bool isPublic;
+  final List<String> assignedUserIds;
+
+  /// Legado: migrado para [assignedUserIds] na leitura.
   final String? ownerId;
   final DateTime createdAt;
 
@@ -27,20 +30,31 @@ class Camera {
     this.isActive = true,
     this.isManualMode = false,
     this.isPublic = false,
+    List<String>? assignedUserIds,
     this.ownerId,
     required this.createdAt,
-  });
+  }) : assignedUserIds = List.unmodifiable(assignedUserIds ?? const []);
 
   bool get usesRtsp => protocol == CameraProtocol.rtsp;
 
   bool get usesHttpFile => protocol == CameraProtocol.httpFile;
 
-  /// RTSP, HLS (RTMP/Intelbras) e HTTP (MP4/MKV) usam media_kit.
   bool get usesMediaKitPlayer =>
       usesRtsp || usesHttpFile || protocol == CameraProtocol.hls;
 
-  /// Legado: HLS migrou para media_kit; mantido para compatibilidade de testes/API.
   bool get usesExoPlayer => false;
+
+  bool get isUnassigned => effectiveAssignedUserIds.isEmpty;
+
+  int get assignedUserCount => effectiveAssignedUserIds.length;
+
+  List<String> get effectiveAssignedUserIds {
+    if (assignedUserIds.isNotEmpty) return assignedUserIds;
+    if (ownerId != null && ownerId!.isNotEmpty) return [ownerId!];
+    return const [];
+  }
+
+  bool hasAccess(String uid) => effectiveAssignedUserIds.contains(uid);
 
   String get rtspPlaybackUrl {
     final url = rtspUrl?.trim();
@@ -63,6 +77,18 @@ class Camera {
   }
 
   String get protocolLabel => protocol.label;
+
+  static List<String> _assignedUserIdsFromJson(Map<String, dynamic> json) {
+    final raw = json['assignedUserIds'];
+    final ids = <String>[];
+    if (raw is List) {
+      for (final item in raw) {
+        final id = item?.toString().trim();
+        if (id != null && id.isNotEmpty) ids.add(id);
+      }
+    }
+    return ids;
+  }
 
   static CameraProtocol _protocolFromJson(Map<String, dynamic> json) {
     final explicit = json['protocol'] as String?;
@@ -104,7 +130,7 @@ class Camera {
       'isActive': isActive,
       'isManualMode': isManualMode,
       'isPublic': isPublic,
-      if (ownerId != null) 'ownerId': ownerId,
+      'assignedUserIds': assignedUserIds,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -126,6 +152,7 @@ class Camera {
       isActive: json['isActive'] ?? true,
       isManualMode: json['isManualMode'] ?? false,
       isPublic: json['isPublic'] ?? false,
+      assignedUserIds: _assignedUserIdsFromJson(json),
       ownerId: json['ownerId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -143,10 +170,12 @@ class Camera {
     bool? isActive,
     bool? isManualMode,
     bool? isPublic,
+    List<String>? assignedUserIds,
     String? ownerId,
     DateTime? createdAt,
     bool clearServer = false,
     bool clearRtspUrl = false,
+    bool clearOwnerId = false,
   }) {
     return Camera(
       id: id ?? this.id,
@@ -164,7 +193,8 @@ class Camera {
       isActive: isActive ?? this.isActive,
       isManualMode: isManualMode ?? this.isManualMode,
       isPublic: isPublic ?? this.isPublic,
-      ownerId: ownerId ?? this.ownerId,
+      assignedUserIds: assignedUserIds ?? this.assignedUserIds,
+      ownerId: clearOwnerId ? null : (ownerId ?? this.ownerId),
       createdAt: createdAt ?? this.createdAt,
     );
   }

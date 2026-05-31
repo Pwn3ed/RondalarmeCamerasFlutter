@@ -52,7 +52,7 @@ class SettingsScreen extends StatelessWidget {
     final isAdmin = auth.isAdmin;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
       children: [
         _ProfileHeader(
           displayName: appUser?.displayName ?? 'Usuário',
@@ -74,13 +74,6 @@ class SettingsScreen extends StatelessWidget {
               title: 'Limite de dispositivos',
               subtitle: '${appUser?.maxDevices ?? 2} aparelhos simultâneos',
               showChevron: false,
-            ),
-            _SettingsTile(
-              icon: Icons.logout,
-              title: 'Sair',
-              subtitle: 'Encerrar sessão neste aparelho',
-              iconColor: Colors.red.shade700,
-              onTap: auth.isLoading ? null : () => _confirmSignOut(context),
             ),
           ],
         ),
@@ -135,7 +128,46 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 32),
+        _SignOutButton(
+          isLoading: auth.isLoading,
+          onPressed: () => _confirmSignOut(context),
+        ),
       ],
+    );
+  }
+}
+
+class _SignOutButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _SignOutButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFEF5350),
+          disabledForegroundColor: AppTheme.textMuted,
+          side: const BorderSide(color: Color(0xFFEF5350), width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        icon: const Icon(Icons.logout, size: 22),
+        label: const Text(
+          'Sair da conta',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 }
@@ -163,7 +195,7 @@ class _ProfileHeader extends StatelessWidget {
               backgroundColor: AppTheme.softGreen,
               child: Icon(
                 isAdmin ? Icons.admin_panel_settings : Icons.person,
-                color: AppTheme.darkGreen,
+                color: AppTheme.accentGreen,
                 size: 32,
               ),
             ),
@@ -181,24 +213,14 @@ class _ProfileHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     email,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppTheme.lightGrey),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   Chip(
-                    label: Text(
-                      isAdmin ? 'Administrador' : 'Usuário',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.darkGreen,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    label: Text(isAdmin ? 'Administrador' : 'Usuário'),
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: AppTheme.softGreen,
-                    side: BorderSide.none,
                   ),
                 ],
               ),
@@ -225,11 +247,7 @@ class _SettingsSection extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title.toUpperCase(),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppTheme.lightGrey,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
+            style: Theme.of(context).textTheme.labelMedium,
           ),
         ),
         Card(
@@ -265,11 +283,11 @@ class _SettingsTile extends StatelessWidget {
 
     return ListTile(
       enabled: enabled,
-      leading: Icon(icon, color: iconColor ?? AppTheme.primaryGreen),
+      leading: Icon(icon, color: iconColor ?? AppTheme.accentGreen),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: showChevron && enabled
-          ? const Icon(Icons.chevron_right, color: AppTheme.lightGrey)
+          ? Icon(Icons.chevron_right, color: AppTheme.textMuted)
           : null,
       onTap: onTap,
     );

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../services/camera_firestore_service.dart';
+import '../services/camera_preview_cache_service.dart';
 
 class CameraProvider with ChangeNotifier {
   final CameraFirestoreService _cameraService = CameraFirestoreService();
@@ -68,7 +69,7 @@ class CameraProvider with ChangeNotifier {
     String? rtspUrl,
     required bool isManualMode,
     bool isPublic = false,
-    required String ownerId,
+    List<String> assignedUserIds = const [],
   }) async {
     final camera = await _cameraService.addCamera(
       name: name,
@@ -80,11 +81,15 @@ class CameraProvider with ChangeNotifier {
       rtspUrl: rtspUrl,
       isManualMode: isManualMode,
       isPublic: isPublic,
-      ownerId: ownerId,
+      assignedUserIds: assignedUserIds,
     );
 
     _cameras.insert(0, camera);
     notifyListeners();
+  }
+
+  Future<List<Camera>> loadCamerasForUser(String userId) {
+    return _cameraService.getCamerasForUser(userId);
   }
 
   Future<void> updateCamera(Camera camera) async {
@@ -111,8 +116,29 @@ class CameraProvider with ChangeNotifier {
     }
   }
 
+  Future<void> grantUserCameraAccess({
+    required String userId,
+    required Set<String> cameraIds,
+  }) {
+    return _cameraService.grantUserCameraAccess(
+      userId: userId,
+      cameraIds: cameraIds,
+    );
+  }
+
+  Future<void> revokeUserCameraAccess({
+    required String cameraId,
+    required String userId,
+  }) {
+    return _cameraService.revokeUserCameraAccess(
+      cameraId: cameraId,
+      userId: userId,
+    );
+  }
+
   Future<void> deleteCamera(String id) async {
     await _cameraService.deleteCamera(id);
+    await CameraPreviewCacheService.instance.clear(id);
     _cameras.removeWhere((camera) => camera.id == id);
     _publicCameras.removeWhere((camera) => camera.id == id);
     notifyListeners();

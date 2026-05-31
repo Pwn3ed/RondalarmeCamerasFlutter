@@ -91,8 +91,6 @@ class _SessionsAdminScreenState extends State<SessionsAdminScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sessões ativas'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],

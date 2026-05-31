@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/camera_provider.dart';
-import '../providers/auth_provider.dart';
+
 import '../models/camera.dart';
+import '../providers/auth_provider.dart';
+import '../providers/camera_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/camera_permissions.dart';
+import '../widgets/app_shell_header.dart';
+import '../widgets/camera_grid_card.dart';
 import 'add_camera_screen.dart';
-import 'edit_camera_screen.dart';
 import 'camera_player_screen.dart';
+import 'edit_camera_screen.dart';
 import 'public_cameras_screen.dart';
 import 'settings_screen.dart';
 
@@ -28,88 +32,38 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isMyCamerasTab = _selectedIndex == 0;
-    final isAdmin = context.watch<AuthProvider>().isAdmin;
-
-    final appBarTitle = switch (_selectedIndex) {
-      0 => isAdmin ? 'Câmeras' : 'Minhas câmeras',
+  String get _headerSubtitle {
+    final isAdmin = context.read<AuthProvider>().isAdmin;
+    return switch (_selectedIndex) {
+      0 => isAdmin ? 'Minhas câmeras' : 'Suas câmeras',
       1 => 'Câmeras públicas',
       _ => 'Configurações',
     };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
+    final isMyCamerasTab = _selectedIndex == 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(appBarTitle),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          Consumer<CameraProvider>(
-            builder: (context, cameraProvider, child) {
-              if (cameraProvider.isLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppTheme.primaryGreen,
-                  ),
-                );
-              }
-
-              if (cameraProvider.cameras.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.videocam_off,
-                        size: 80,
-                        color: AppTheme.lightGrey,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Nenhuma câmera cadastrada',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: AppTheme.lightGrey),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isAdmin
-                            ? 'Toque no botão + para adicionar uma câmera'
-                            : 'Aguarde o administrador cadastrar suas câmeras',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.lightGrey,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () => cameraProvider.loadCameras(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cameraProvider.cameras.length,
-                  itemBuilder: (context, index) {
-                    final camera = cameraProvider.cameras[index];
-                    return _buildCameraCard(
-                      context,
-                      camera,
-                      cameraProvider,
-                      isAdmin: isAdmin,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          const PublicCamerasScreen(showAppBar: false),
-          const SettingsScreen(),
-        ],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppShellHeader(subtitle: _headerSubtitle),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  _MyCamerasTab(isAdmin: isAdmin),
+                  PublicCamerasScreen(showAppBar: false),
+                  const SettingsScreen(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: isMyCamerasTab && isAdmin
           ? FloatingActionButton(
@@ -125,36 +79,31 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Câmera adicionada com sucesso!'),
-                      backgroundColor: AppTheme.lightGreen,
+                      backgroundColor: AppTheme.primaryGreen,
                     ),
                   );
                 }
               },
-              backgroundColor: AppTheme.lightGreen,
-              child: const Icon(Icons.add, color: AppTheme.primaryWhite),
+              child: const Icon(Icons.add),
             )
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          setState(() => _selectedIndex = index);
         },
-        indicatorColor: AppTheme.softGreen,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.videocam_outlined),
-            selectedIcon: Icon(Icons.videocam),
-            label: 'Minhas câmeras',
+            icon: const Icon(Icons.videocam_outlined),
+            selectedIcon: const Icon(Icons.videocam),
+            label: isAdmin ? 'Câmeras' : 'Minhas câmeras',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.public_outlined),
             selectedIcon: Icon(Icons.public),
-            label: 'Câmeras públicas',
+            label: 'Públicas',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Configurações',
@@ -163,207 +112,126 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
       ),
     );
   }
+}
 
-  Widget _buildCameraCard(
-    BuildContext context,
-    Camera camera,
-    CameraProvider cameraProvider, {
-    required bool isAdmin,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CameraPlayerScreen(
-                camera: camera,
-                canEdit: isAdmin,
-                showSensitiveInfo: isAdmin,
-              ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          camera.name,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (camera.isPublic) ...[
-                        const SizedBox(width: 8),
-                        Chip(
-                          label: Text(
-                            'Pública',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: AppTheme.darkGreen,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: AppTheme.softGreen,
-                          side: BorderSide.none,
-                        ),
-                      ],
-                    ],
+class _MyCamerasTab extends StatelessWidget {
+  final bool isAdmin;
+
+  const _MyCamerasTab({required this.isAdmin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CameraProvider>(
+      builder: (context, cameraProvider, child) {
+        if (cameraProvider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (cameraProvider.cameras.isEmpty) {
+          return _EmptyCamerasState(isAdmin: isAdmin);
+        }
+
+        final activeCount =
+            cameraProvider.cameras.where((c) => c.isActive).length;
+
+        return RefreshIndicator(
+          onRefresh: () => cameraProvider.loadCameras(),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    '$activeCount câmera${activeCount == 1 ? '' : 's'} ativa${activeCount == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    camera.description,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppTheme.lightGrey),
-                  ),
-                ],
-              ),
-              if (isAdmin) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.computer, size: 16, color: AppTheme.lightGrey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        camera.serverIp != null && camera.serverPort != null
-                            ? '${camera.serverIp}:${camera.serverPort}'
-                            : camera.streamUrl,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.lightGrey,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.settings_input_component,
-                      size: 16,
-                      color: AppTheme.lightGrey,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      camera.protocolLabel,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.lightGrey,
-                      ),
-                    ),
-                  ],
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: isAdmin ? 0.68 : 0.82,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final camera = cameraProvider.cameras[index];
+                    return _MyCameraGridCard(
+                      camera: camera,
+                      isAdmin: isAdmin,
+                      cameraProvider: cameraProvider,
+                    );
+                  }, childCount: cameraProvider.cameras.length),
                 ),
-              ],
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Criada em: ${_formatDate(camera.createdAt)}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppTheme.lightGrey),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CameraPlayerScreen(
-                                camera: camera,
-                                canEdit: isAdmin,
-                                showSensitiveInfo: isAdmin,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.play_arrow),
-                        color: AppTheme.primaryGreen,
-                        tooltip: 'Reproduzir',
-                      ),
-                      if (isAdmin) ...[
-                        IconButton(
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    EditCameraScreen(camera: camera),
-                              ),
-                            );
-                            if (!context.mounted) return;
-                            if (result == true) {
-                              await cameraProvider.loadCameras();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Câmera atualizada com sucesso!',
-                                  ),
-                                  backgroundColor: AppTheme.lightGreen,
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.edit),
-                          color: AppTheme.lightGreen,
-                          tooltip: 'Editar',
-                        ),
-                        IconButton(
-                          onPressed: () => _showDeleteDialog(
-                            context,
-                            camera,
-                            cameraProvider,
-                          ),
-                          icon: const Icon(Icons.delete),
-                          color: Colors.red,
-                          tooltip: 'Excluir',
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+class _MyCameraGridCard extends StatelessWidget {
+  final Camera camera;
+  final bool isAdmin;
+  final CameraProvider cameraProvider;
+
+  const _MyCameraGridCard({
+    required this.camera,
+    required this.isAdmin,
+    required this.cameraProvider,
+  });
+
+  void _openPlayer(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final showPanel = shouldShowPublicVisibilityPanel(camera, auth);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraPlayerScreen(
+          camera: camera,
+          canEdit: isAdmin,
+          showPublicPanel: showPanel,
+          canTogglePublic: canTogglePublicVisibility(camera, auth),
+          publicToggleBlockedMessage: showPanel
+              ? publicToggleBlockedMessage(auth.appUser)
+              : null,
+          showSensitiveInfo: isAdmin,
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  Future<void> _edit(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditCameraScreen(camera: camera),
+      ),
+    );
+    if (!context.mounted) return;
+    if (result == true) {
+      await cameraProvider.loadCameras();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Câmera atualizada com sucesso!'),
+          backgroundColor: AppTheme.primaryGreen,
+        ),
+      );
+    }
   }
 
-  void _showDeleteDialog(
-    BuildContext context,
-    Camera camera,
-    CameraProvider cameraProvider,
-  ) {
+  void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Excluir Câmera'),
+          title: const Text('Excluir câmera'),
           content: Text(
             'Tem certeza que deseja excluir a câmera "${camera.name}"?',
           ),
@@ -381,10 +249,10 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Câmera excluída com sucesso!'),
-                      backgroundColor: AppTheme.lightGreen,
+                      backgroundColor: AppTheme.primaryGreen,
                     ),
                   );
-                } catch (e) {
+                } catch (_) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -394,11 +262,64 @@ class _CamerasListScreenState extends State<CamerasListScreen> {
                   );
                 }
               },
-              child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+              child: const Text(
+                'Excluir',
+                style: TextStyle(color: Color(0xFFEF5350)),
+              ),
             ),
           ],
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CameraGridCard(
+      camera: camera,
+      isAdmin: isAdmin,
+      onTap: () => _openPlayer(context),
+      onEdit: isAdmin ? () => _edit(context) : null,
+      onDelete: isAdmin ? () => _confirmDelete(context) : null,
+    );
+  }
+}
+
+class _EmptyCamerasState extends StatelessWidget {
+  final bool isAdmin;
+
+  const _EmptyCamerasState({required this.isAdmin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.videocam_off_outlined,
+              size: 72,
+              color: AppTheme.textMuted.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma câmera cadastrada',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isAdmin
+                  ? 'Toque no botão + para adicionar uma câmera'
+                  : 'Aguarde o administrador cadastrar suas câmeras',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

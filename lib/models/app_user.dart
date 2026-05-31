@@ -9,6 +9,10 @@ class AppUser {
   final bool mustChangePassword;
   final bool disabled;
   final int maxDevices;
+  /// Cliente pode alternar câmera pública/privada (admin sempre pode).
+  final bool canToggleCameraPublic;
+  /// `admin` ou `auto` quando [canToggleCameraPublic] é false.
+  final String? publicToggleBlockedReason;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
@@ -21,6 +25,8 @@ class AppUser {
     this.mustChangePassword = false,
     this.disabled = false,
     this.maxDevices = 2,
+    this.canToggleCameraPublic = true,
+    this.publicToggleBlockedReason,
     this.createdBy,
     this.createdAt,
     this.lastLoginAt,
@@ -36,6 +42,9 @@ class AppUser {
       'mustChangePassword': mustChangePassword,
       'disabled': disabled,
       'maxDevices': maxDevices,
+      'canToggleCameraPublic': canToggleCameraPublic,
+      if (publicToggleBlockedReason != null)
+        'publicToggleBlockedReason': publicToggleBlockedReason,
       if (createdBy != null) 'createdBy': createdBy,
       if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
       if (lastLoginAt != null) 'lastLoginAt': Timestamp.fromDate(lastLoginAt!),
@@ -52,6 +61,9 @@ class AppUser {
       mustChangePassword: data['mustChangePassword'] as bool? ?? false,
       disabled: data['disabled'] as bool? ?? false,
       maxDevices: data['maxDevices'] as int? ?? 2,
+      canToggleCameraPublic: data['canToggleCameraPublic'] as bool? ?? true,
+      publicToggleBlockedReason:
+          data['publicToggleBlockedReason'] as String?,
       createdBy: data['createdBy'] as String?,
       createdAt: _tsToDate(data['createdAt']),
       lastLoginAt: _tsToDate(data['lastLoginAt']),
@@ -71,6 +83,9 @@ class AppUser {
     bool? mustChangePassword,
     bool? disabled,
     int? maxDevices,
+    bool? canToggleCameraPublic,
+    String? publicToggleBlockedReason,
+    bool clearPublicToggleBlockedReason = false,
     DateTime? lastLoginAt,
   }) {
     return AppUser(
@@ -81,6 +96,11 @@ class AppUser {
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
       disabled: disabled ?? this.disabled,
       maxDevices: maxDevices ?? this.maxDevices,
+      canToggleCameraPublic:
+          canToggleCameraPublic ?? this.canToggleCameraPublic,
+      publicToggleBlockedReason: clearPublicToggleBlockedReason
+          ? null
+          : (publicToggleBlockedReason ?? this.publicToggleBlockedReason),
       createdBy: createdBy,
       createdAt: createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,7 +10,8 @@ import 'theme/app_theme.dart';
 import 'screens/auth_wrapper.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   MediaKit.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
@@ -27,7 +29,8 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Rondalarme Câmeras',
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
         home: const AuthWrapper(),
         debugShowCheckedModeBanner: false,
       ),

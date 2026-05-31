@@ -10,6 +10,9 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthEnabled() && userDoc().role == 'admin';
     }
+    function canToggleCameraPublic() {
+      return userDoc().get('canToggleCameraPublic', true) == true;
+    }
 
     match /users/{uid} {
       allow read: if request.auth != null
@@ -17,16 +20,42 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
                  || (request.auth.uid == uid
-                     && request.resource.data.diff(resource.data).changedKeys()
-                          .hasOnly(['mustChangePassword', 'lastLoginAt']));
+                     && (
+                          request.resource.data.diff(resource.data).changedKeys()
+                               .hasOnly(['mustChangePassword', 'lastLoginAt'])
+                       || (
+                            request.resource.data.canToggleCameraPublic == false
+                            && request.resource.data.diff(resource.data).changedKeys()
+                                 .hasOnly([
+                                   'canToggleCameraPublic',
+                                   'publicToggleBlockedReason'
+                                 ])
+                          )
+                     ));
     }
 
     match /cameras/{id} {
+      function hasCameraAccess(data) {
+        return request.auth.uid in data.get('assignedUserIds', [])
+            || (data.keys().hasAny(['ownerId'])
+                && data.ownerId == request.auth.uid);
+      }
+
       allow read: if isAuthEnabled() && (
                       isAdmin()
-                   || resource.data.ownerId == request.auth.uid
+                   || hasCameraAccess(resource.data)
                    || resource.data.isPublic == true);
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+                 || (isAuthEnabled()
+                     && hasCameraAccess(resource.data)
+                     && canToggleCameraPublic()
+                     && request.resource.data.assignedUserIds
+                          == resource.data.get('assignedUserIds', [])
+                     && request.resource.data.get('ownerId', null)
+                          == resource.data.get('ownerId', null)
+                     && request.resource.data.diff(resource.data).changedKeys()
+                          .hasOnly(['isPublic']));
     }
 
     match /sessions/{sid} {
@@ -44,7 +73,9 @@ service cloud.firestore {
     }
 
     match /audit_logs/{id} {
-      allow read: if isAdmin();
+      allow read: if isAdmin()
+                  || (isAuthEnabled()
+                      && resource.data.actorUid == request.auth.uid);
       allow create: if request.auth != null
                     && request.resource.data.actorUid == request.auth.uid
                     && request.resource.data.keys().hasAll(

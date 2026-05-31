@@ -94,8 +94,6 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Logs de auditoria'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

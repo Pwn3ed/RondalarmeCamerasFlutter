@@ -1,0 +1,19 @@
+---
+description: Mantém docs/ do app alinhados ao TCC em ~/me/tcc — atualizar ambos ao mudar features
+alwaysApply: true
+---
+
+# App Rondalarme + TCC
+
+Este app é documentado academicamente em `/home/pwn3ed/me/tcc`.
+
+**Ao implementar ou alterar funcionalidades** (auth, admin, CI, câmeras, testes):
+
+1. Atualizar ou criar doc em `docs/` (ex.: `CI_CD.md`, `ADMIN_SETUP.md`)
+2. Espelhar resumo em `/home/pwn3ed/me/tcc/files/docs/` (ex.: `ci-cd.md`, `hardening.md`)
+3. Se relevante ao TCC, propagar para os `.tex` e apresentação — usar skill **tcc-rondalarme-sync**
+
+**Antes de afirmar status de implementação no TCC**, ler `docs/` deste repositório.
+
+Novo doc em `docs/` → adicionar entrada em `/home/pwn3ed/me/tcc/files/docs/repositorios.md`.  
+Notas pessoais do autor ficam em `/home/pwn3ed/me/tcc/files/notes/` — não confundir com `files/docs/`.

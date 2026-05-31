@@ -112,11 +112,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Criar usuário'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
-      ),
+      appBar: AppBar(title: const Text('Criar usuário')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -196,11 +192,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _createUser,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: AppTheme.primaryWhite,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
@@ -222,8 +213,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Conta criada'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
         automaticallyImplyLeading: false,
       ),
       body: Padding(
@@ -248,9 +237,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             Text(
               'Anote a senha temporária abaixo. O cliente precisará trocá-la no primeiro acesso.',
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 32),
             Container(
@@ -282,11 +269,6 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             const Spacer(),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: AppTheme.primaryWhite,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
               child: const Text('Concluído'),
             ),
           ],

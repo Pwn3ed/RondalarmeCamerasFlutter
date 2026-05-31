@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/app_user.dart';
 import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
 import '../services/audit_log_service.dart';
-import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/camera_stream_config_section.dart';
 
@@ -28,16 +26,12 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
   final _manualUrlController = TextEditingController();
   final _rtspUrlController = TextEditingController();
   final _httpFileUrlController = TextEditingController();
-  final _userService = UserService();
   final _auditLog = AuditLogService();
 
   bool _isLoading = false;
-  bool _loadingUsers = true;
   CameraProtocol _protocol = CameraProtocol.hls;
   bool _isManualMode = false;
   bool _isPublic = false;
-  List<AppUser> _owners = [];
-  String? _selectedOwnerId;
 
   @override
   void initState() {
@@ -47,23 +41,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.pop(context);
       });
-      return;
-    }
-    _loadOwners();
-  }
-
-  Future<void> _loadOwners() async {
-    try {
-      final owners = await _userService.listForOwnerDropdown();
-      if (mounted) {
-        setState(() {
-          _owners = owners;
-          _selectedOwnerId = owners.isNotEmpty ? owners.first.uid : null;
-          _loadingUsers = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loadingUsers = false);
     }
   }
 
@@ -82,20 +59,8 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loadingUsers) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-        ),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Adicionar Câmera'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
-      ),
+      appBar: AppBar(title: const Text('Adicionar Câmera')),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -116,29 +81,11 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedOwnerId,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Atribuir a usuário *',
-                          prefixIcon: Icon(Icons.person),
-                        ),
-                        items: _owners
-                            .map(
-                              (u) => DropdownMenuItem(
-                                value: u.uid,
-                                child: Text(
-                                  '${u.displayName} (${u.email})',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _selectedOwnerId = v),
-                        validator: (v) =>
-                            v == null ? 'Selecione o usuário dono' : null,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Cadastre a câmera agora. Depois, em Usuários, abra o '
+                        'cliente e toque em Adicionar para escolher o acesso.',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -169,10 +116,8 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Tornar câmera pública'),
-                        subtitle: Text(
-                          'Outros usuários poderão ver e reproduzir em Câmeras públicas.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.darkGrey),
+                        subtitle: const Text(
+                          'Compartilha com outros usuários e no painel da empresa.',
                         ),
                         value: _isPublic,
                         onChanged: (v) => setState(() => _isPublic = v),
@@ -201,20 +146,13 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveCamera,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  foregroundColor: AppTheme.primaryWhite,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppTheme.primaryWhite,
-                          ),
+                          color: AppTheme.primaryWhite,
                         ),
                       )
                     : const Text(
@@ -244,7 +182,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         rtspUrl: url,
         isManualMode: false,
         isPublic: _isPublic,
-        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -259,7 +196,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         streamPath: url,
         isManualMode: false,
         isPublic: _isPublic,
-        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -273,7 +209,6 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         streamPath: _manualUrlController.text.trim(),
         isManualMode: true,
         isPublic: _isPublic,
-        ownerId: _selectedOwnerId,
         createdAt: DateTime.now(),
       );
     }
@@ -288,14 +223,12 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
       streamPath: _streamPathController.text.trim(),
       isManualMode: false,
       isPublic: _isPublic,
-      ownerId: _selectedOwnerId,
       createdAt: DateTime.now(),
     );
   }
 
   Future<void> _saveCamera() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedOwnerId == null) return;
 
     setState(() => _isLoading = true);
 
@@ -312,19 +245,17 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
         rtspUrl: payload.rtspUrl,
         isManualMode: payload.isManualMode,
         isPublic: payload.isPublic,
-        ownerId: _selectedOwnerId!,
       );
 
       final added = provider.cameras.firstWhere(
-        (c) => c.name == payload.name && c.ownerId == _selectedOwnerId,
-        orElse: () => provider.cameras.last,
+        (c) => c.name == payload.name,
+        orElse: () => provider.cameras.first,
       );
 
       await _auditLog.log(
         action: 'camera_created',
-        targetUid: _selectedOwnerId,
         targetCameraId: added.id,
-        metadata: {'assignedTo': _selectedOwnerId, 'isPublic': _isPublic},
+        metadata: {'isPublic': _isPublic, 'assignedUserIds': <String>[]},
       );
 
       if (mounted) Navigator.pop(context, true);

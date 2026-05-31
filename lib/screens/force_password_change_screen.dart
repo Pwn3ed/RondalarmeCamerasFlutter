@@ -62,12 +62,9 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: AppTheme.offWhite,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: const Text('Definir nova senha'),
-          backgroundColor: AppTheme.primaryGreen,
-          foregroundColor: AppTheme.primaryWhite,
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -80,15 +77,13 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                   Icon(
                     Icons.lock_reset,
                     size: 72,
-                    color: AppTheme.primaryGreen,
+                    color: AppTheme.accentGreen,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Por segurança, defina uma nova senha antes de continuar.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: AppTheme.darkGrey),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
@@ -156,11 +151,6 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                     builder: (context, auth, _) {
                       return ElevatedButton(
                         onPressed: auth.isLoading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryGreen,
-                          foregroundColor: AppTheme.primaryWhite,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
                         child: auth.isLoading
                             ? const SizedBox(
                                 height: 20,

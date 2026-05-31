@@ -37,6 +37,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null && _appUser != null;
   bool get isAdmin => _appUser?.isAdmin ?? false;
   bool get mustChangePassword => _appUser?.mustChangePassword ?? false;
+  bool get canToggleCameraPublic => _appUser?.canToggleCameraPublic ?? true;
 
   SessionService get sessionService => _sessionService;
 

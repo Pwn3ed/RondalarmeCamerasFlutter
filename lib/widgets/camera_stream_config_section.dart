@@ -51,7 +51,7 @@ class CameraStreamConfigSection extends StatelessWidget {
             Text(
               'Conexão da câmera',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primaryGreen,
+                color: AppTheme.accentGreen,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -70,9 +70,7 @@ class CameraStreamConfigSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               _protocolHint(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.darkGrey),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             if (protocol == CameraProtocol.hls) ..._hlsFields(context),
@@ -93,7 +91,7 @@ class CameraStreamConfigSection extends StatelessWidget {
           Text(
             isManualMode ? 'Manual' : 'Automático',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppTheme.primaryGreen,
+              color: AppTheme.accentGreen,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -109,9 +107,7 @@ class CameraStreamConfigSection extends StatelessWidget {
       if (!isManualMode) ...[
         Text(
           'Preencha os campos para gerar a URL HLS automaticamente:',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
         TextFormField(
@@ -173,9 +169,7 @@ class CameraStreamConfigSection extends StatelessWidget {
       if (isManualMode) ...[
         Text(
           'URL completa do stream HLS:',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
         TextFormField(

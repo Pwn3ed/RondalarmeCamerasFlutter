@@ -4,6 +4,14 @@
       "collectionGroup": "cameras",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "assignedUserIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cameras",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "ownerId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]

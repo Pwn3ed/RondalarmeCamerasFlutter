@@ -47,6 +47,20 @@ class UserService {
     await _users.doc(uid).update({'maxDevices': maxDevices});
   }
 
+  Future<void> setCanToggleCameraPublic(
+    String uid, {
+    required bool allowed,
+    String? blockedReason,
+  }) async {
+    final update = <String, dynamic>{'canToggleCameraPublic': allowed};
+    if (allowed) {
+      update['publicToggleBlockedReason'] = FieldValue.delete();
+    } else if (blockedReason != null) {
+      update['publicToggleBlockedReason'] = blockedReason;
+    }
+    await _users.doc(uid).update(update);
+  }
+
   Future<void> updateLastLogin(String uid) async {
     await _users.doc(uid).update({'lastLoginAt': FieldValue.serverTimestamp()});
   }

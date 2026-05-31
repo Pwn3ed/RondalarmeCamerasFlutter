@@ -60,12 +60,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.offWhite,
-      appBar: AppBar(
-        title: const Text('Alterar senha'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: AppTheme.primaryWhite,
-      ),
+      appBar: AppBar(title: const Text('Alterar senha')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -76,9 +71,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 Text(
                   'Use uma senha forte com letras, números e símbolos.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppTheme.darkGrey),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
@@ -146,11 +139,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   builder: (context, auth, _) {
                     return ElevatedButton(
                       onPressed: auth.isLoading ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryGreen,
-                        foregroundColor: AppTheme.primaryWhite,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
                       child: auth.isLoading
                           ? const SizedBox(
                               height: 20,
