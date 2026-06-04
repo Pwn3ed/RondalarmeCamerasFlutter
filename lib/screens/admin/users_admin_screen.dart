@@ -4,8 +4,8 @@ import '../../models/app_user.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import 'create_user_screen.dart';
+import 'edit_user_screen.dart';
 import 'user_admin_actions.dart';
-import 'user_cameras_screen.dart';
 
 class UsersAdminScreen extends StatelessWidget {
   const UsersAdminScreen({super.key});
@@ -29,7 +29,7 @@ class UsersAdminScreen extends StatelessWidget {
           if (created == true && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Usuário criado'),
+                content: Text('Conta criada com sucesso'),
                 backgroundColor: AppTheme.lightGreen,
               ),
             );
@@ -48,9 +48,8 @@ class UsersAdminScreen extends StatelessWidget {
           }
 
           final users = snapshot.data ?? [];
-          final clients = users.where((u) => !u.isAdmin).toList();
 
-          if (clients.isEmpty) {
+          if (users.isEmpty) {
             return RefreshIndicator(
               onRefresh: () => _refreshUsers(userService),
               child: ListView(
@@ -70,28 +69,59 @@ class UsersAdminScreen extends StatelessWidget {
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
-              itemCount: clients.length,
+              itemCount: users.length,
               itemBuilder: (context, index) {
-                final u = clients[index];
+                final u = users[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    title: Text(u.displayName),
+                    title: Row(
+                      children: [
+                        Expanded(child: Text(u.displayName)),
+                        if (u.isAdmin)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.softGreen,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Admin',
+                              style: TextStyle(
+                                color: AppTheme.accentGreen,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     subtitle: Text(
                       '${u.email}\n'
-                      'Máx. dispositivos: ${u.maxDevices}'
+                      '${u.isAdmin ? 'Administrador' : 'Máx. dispositivos: ${u.maxDevices}'}'
                       '${u.disabled ? '\nDESABILITADO' : ''}'
                       '${u.mustChangePassword ? '\nTroca de senha pendente' : ''}'
                       '${!u.canToggleCameraPublic ? '\nVisibilidade pública bloqueada' : ''}',
                     ),
                     isThreeLine: true,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final updated = await Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => UserCamerasScreen(user: u),
+                          builder: (_) => EditUserScreen(user: u),
                         ),
                       );
+                      if (updated == true && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Usuário atualizado'),
+                            backgroundColor: AppTheme.lightGreen,
+                          ),
+                        );
+                      }
                     },
                     trailing: PopupMenuButton<String>(
                       onSelected: (action) =>

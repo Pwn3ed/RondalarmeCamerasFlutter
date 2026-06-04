@@ -67,7 +67,6 @@ class _PublicCamerasScreenState extends State<PublicCamerasScreen> {
                     final camera = cameraProvider.publicCameras[index];
                     return CameraGridCard(
                       camera: camera,
-                      isAdmin: false,
                       onTap: () {
                         final auth = context.read<AuthProvider>();
                         final showPanel = shouldShowPublicVisibilityPanel(

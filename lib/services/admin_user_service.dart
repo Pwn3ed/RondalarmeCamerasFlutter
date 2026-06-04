@@ -3,15 +3,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import '../firebase_options.dart';
+import '../models/user_role.dart';
 import '../utils/password_generator.dart';
 
 class AdminUserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<({String tempPassword, String uid})> createClient({
+  Future<({String tempPassword, String uid})> createUser({
     required String email,
     required String displayName,
+    required UserRole role,
     int maxDevices = 2,
   }) async {
     final tempPassword = generateTempPassword();
@@ -36,7 +38,7 @@ class AdminUserService {
       await _firestore.collection('users').doc(uid).set({
         'email': email.trim(),
         'displayName': displayName.trim(),
-        'role': 'user',
+        'role': role.storageValue,
         'mustChangePassword': true,
         'disabled': false,
         'maxDevices': maxDevices,

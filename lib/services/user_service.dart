@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/app_user.dart';
+import '../models/user_role.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -67,5 +69,28 @@ class UserService {
 
   Future<void> clearMustChangePassword(String uid) async {
     await _users.doc(uid).update({'mustChangePassword': false});
+  }
+
+  Future<void> updateUser({
+    required String uid,
+    required String displayName,
+    required UserRole role,
+    required int maxDevices,
+    required bool disabled,
+    required bool canToggleCameraPublic,
+  }) async {
+    final update = <String, dynamic>{
+      'displayName': displayName.trim(),
+      'role': role.storageValue,
+      'maxDevices': maxDevices,
+      'disabled': disabled,
+      'canToggleCameraPublic': canToggleCameraPublic,
+    };
+    if (canToggleCameraPublic) {
+      update['publicToggleBlockedReason'] = FieldValue.delete();
+    } else {
+      update['publicToggleBlockedReason'] = 'admin';
+    }
+    await _users.doc(uid).update(update);
   }
 }

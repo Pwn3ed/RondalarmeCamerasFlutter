@@ -7,6 +7,7 @@ import '../../services/audit_log_service.dart';
 import '../../services/session_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import 'edit_user_screen.dart';
 import 'user_cameras_screen.dart';
 
 List<PopupMenuItem<String>> userAdminMenuItems(
@@ -14,6 +15,10 @@ List<PopupMenuItem<String>> userAdminMenuItems(
   bool includeCamerasAction = true,
 }) {
   return [
+    const PopupMenuItem(
+      value: 'edit',
+      child: Text('Editar usuário'),
+    ),
     if (includeCamerasAction)
       const PopupMenuItem(
         value: 'cameras',
@@ -56,6 +61,24 @@ Future<void> handleUserAdminAction(
   final auth = context.read<AuthProvider>();
 
   switch (action) {
+    case 'edit':
+      if (context.mounted) {
+        final updated = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditUserScreen(user: user),
+          ),
+        );
+        if (updated == true && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Usuário atualizado'),
+              backgroundColor: AppTheme.lightGreen,
+            ),
+          );
+        }
+      }
+      break;
     case 'cameras':
       if (!includeCamerasNavigation) return;
       if (context.mounted) {
@@ -133,6 +156,18 @@ Future<void> handleUserAdminAction(
       }
       break;
     case 'disable':
+      final currentUid = auth.user?.uid;
+      if (currentUid == user.uid) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Você não pode desabilitar sua própria conta.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        break;
+      }
       await userService.setDisabled(user.uid, true);
       await sessionService.revokeAllActiveForUser(
         user.uid,

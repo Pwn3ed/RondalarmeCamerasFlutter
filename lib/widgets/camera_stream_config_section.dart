@@ -14,6 +14,7 @@ class CameraStreamConfigSection extends StatelessWidget {
   final TextEditingController manualUrlController;
   final TextEditingController rtspUrlController;
   final TextEditingController httpFileUrlController;
+  final bool privacyMode;
 
   const CameraStreamConfigSection({
     super.key,
@@ -27,6 +28,7 @@ class CameraStreamConfigSection extends StatelessWidget {
     required this.manualUrlController,
     required this.rtspUrlController,
     required this.httpFileUrlController,
+    this.privacyMode = false,
   });
 
   String _protocolHint() {
@@ -67,15 +69,27 @@ class CameraStreamConfigSection extends StatelessWidget {
                   .toList(),
               onChanged: onProtocolChanged,
             ),
-            const SizedBox(height: 8),
-            Text(
-              _protocolHint(),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            if (!privacyMode) ...[
+              const SizedBox(height: 8),
+              Text(
+                _protocolHint(),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             const SizedBox(height: 16),
-            if (protocol == CameraProtocol.hls) ..._hlsFields(context),
-            if (protocol == CameraProtocol.rtsp) ..._rtspFields(),
-            if (protocol == CameraProtocol.httpFile) ..._httpFileFields(),
+            if (privacyMode)
+              Text(
+                'Servidor, caminho e URLs ocultos no modo privacidade. '
+                'Desative em Configurações para editar ou visualizar.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textMuted,
+                ),
+              )
+            else ...[
+              if (protocol == CameraProtocol.hls) ..._hlsFields(context),
+              if (protocol == CameraProtocol.rtsp) ..._rtspFields(),
+              if (protocol == CameraProtocol.httpFile) ..._httpFileFields(),
+            ],
           ],
         ),
       ),

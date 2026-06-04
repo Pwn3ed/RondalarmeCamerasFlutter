@@ -4,8 +4,9 @@ import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'providers/camera_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/camera_provider.dart';
+import 'providers/privacy_mode_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth_wrapper.dart';
 
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CameraProvider()),
+        ChangeNotifierProvider(create: (_) => PrivacyModeProvider()),
       ],
       child: MaterialApp(
         title: 'Rondalarme Câmeras',

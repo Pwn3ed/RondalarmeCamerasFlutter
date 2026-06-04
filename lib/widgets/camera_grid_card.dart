@@ -6,18 +6,12 @@ import 'camera_preview_thumbnail.dart';
 
 class CameraGridCard extends StatelessWidget {
   final Camera camera;
-  final bool isAdmin;
   final VoidCallback onTap;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
 
   const CameraGridCard({
     super.key,
     required this.camera,
-    required this.isAdmin,
     required this.onTap,
-    this.onEdit,
-    this.onDelete,
   });
 
   @override
@@ -37,15 +31,10 @@ class CameraGridCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _ThumbnailArea(
-                  camera: camera,
-                  showAdminActions: isAdmin && (onEdit != null || onDelete != null),
-                  onEdit: onEdit,
-                  onDelete: onDelete,
-                ),
+                child: _ThumbnailArea(camera: camera),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, isAdmin ? 10 : 8),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -81,46 +70,6 @@ class CameraGridCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (isAdmin) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        camera.isUnassigned
-                            ? 'Sem usuário atribuído'
-                            : '${camera.assignedUserCount} usuário${camera.assignedUserCount == 1 ? '' : 's'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: camera.isUnassigned
-                              ? Colors.orange
-                              : AppTheme.textMuted,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        camera.protocolLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textMuted,
-                          height: 1.15,
-                        ),
-                      ),
-                      if (camera.serverIp != null && camera.serverPort != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '${camera.serverIp}:${camera.serverPort}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textMuted,
-                            fontFamily: 'monospace',
-                            fontSize: 11,
-                            height: 1.15,
-                          ),
-                        ),
-                      ],
-                    ],
                   ],
                 ),
               ),
@@ -134,16 +83,8 @@ class CameraGridCard extends StatelessWidget {
 
 class _ThumbnailArea extends StatelessWidget {
   final Camera camera;
-  final bool showAdminActions;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
 
-  const _ThumbnailArea({
-    required this.camera,
-    this.showAdminActions = false,
-    this.onEdit,
-    this.onDelete,
-  });
+  const _ThumbnailArea({required this.camera});
 
   @override
   Widget build(BuildContext context) {
@@ -159,30 +100,6 @@ class _ThumbnailArea extends StatelessWidget {
             left: 8,
             child: _StatusBadge(isActive: camera.isActive),
           ),
-          if (showAdminActions)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (onEdit != null)
-                    _ActionIcon(
-                      icon: Icons.edit_outlined,
-                      color: AppTheme.accentGreen,
-                      tooltip: 'Editar',
-                      onPressed: onEdit!,
-                    ),
-                  if (onDelete != null)
-                    _ActionIcon(
-                      icon: Icons.delete_outline,
-                      color: const Color(0xFFEF5350),
-                      tooltip: 'Excluir',
-                      onPressed: onDelete!,
-                    ),
-                ],
-              ),
-            ),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -274,28 +191,3 @@ class _PublicBadge extends StatelessWidget {
   }
 }
 
-class _ActionIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  const _ActionIcon({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon, color: color, size: 20),
-      tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-    );
-  }
-}

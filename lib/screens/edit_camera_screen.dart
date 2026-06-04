@@ -5,9 +5,14 @@ import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/privacy_mode_provider.dart';
 import '../services/audit_log_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_outlined_action_button.dart';
 import '../widgets/camera_stream_config_section.dart';
+
+/// Valor retornado por [Navigator.pop] quando a câmera foi excluída.
+const editCameraDeletedResult = 'deleted';
 
 class EditCameraScreen extends StatefulWidget {
   final Camera camera;
@@ -151,6 +156,7 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                 manualUrlController: _manualUrlController,
                 rtspUrlController: _rtspUrlController,
                 httpFileUrlController: _httpFileUrlController,
+                privacyMode: context.watch<PrivacyModeProvider>().isEnabled,
               ),
               const SizedBox(height: 16),
               Card(
@@ -210,34 +216,20 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _updateCamera,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppTheme.primaryWhite,
-                        ),
-                      )
-                    : const Text(
-                        'Atualizar Câmera',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+              AppOutlinedActionButton(
+                label: 'Atualizar Câmera',
+                icon: Icons.save_outlined,
+                color: AppTheme.primaryGreen,
+                isLoading: _isLoading,
+                onPressed: _updateCamera,
               ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _isLoading ? null : () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryGreen,
-                  side: const BorderSide(color: AppTheme.primaryGreen),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 12),
+              AppOutlinedActionButton(
+                label: 'Excluir Câmera',
+                icon: Icons.delete_outline,
+                color: const Color(0xFFEF5350),
+                isLoading: _isLoading,
+                onPressed: _confirmDelete,
               ),
             ],
           ),
@@ -326,6 +318,61 @@ class _EditCameraScreenState extends State<EditCameraScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} às ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Excluir câmera'),
+          content: Text(
+            'Tem certeza que deseja excluir a câmera "${widget.camera.name}"? '
+            'Esta ação não pode ser desfeita.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFEF5350),
+              ),
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    await _deleteCamera();
+  }
+
+  Future<void> _deleteCamera() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await context.read<CameraProvider>().deleteCamera(widget.camera.id);
+      await _auditLog.log(
+        action: 'camera_deleted',
+        targetCameraId: widget.camera.id,
+      );
+      if (mounted) Navigator.pop(context, editCameraDeletedResult);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao excluir câmera: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _updateCamera() async {

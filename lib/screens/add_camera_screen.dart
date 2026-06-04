@@ -5,6 +5,7 @@ import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/privacy_mode_provider.dart';
 import '../services/audit_log_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/camera_stream_config_section.dart';
@@ -142,6 +143,7 @@ class _AddCameraScreenState extends State<AddCameraScreen> {
                 manualUrlController: _manualUrlController,
                 rtspUrlController: _rtspUrlController,
                 httpFileUrlController: _httpFileUrlController,
+                privacyMode: context.watch<PrivacyModeProvider>().isEnabled,
               ),
               const SizedBox(height: 24),
               ElevatedButton(

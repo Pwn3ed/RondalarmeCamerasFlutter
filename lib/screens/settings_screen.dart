@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/privacy_mode_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_outlined_action_button.dart';
 import 'admin/audit_logs_screen.dart';
 import 'admin/sessions_admin_screen.dart';
 import 'admin/users_admin_screen.dart';
@@ -102,6 +104,35 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          _SettingsSection(
+            title: 'Privacidade',
+            children: [
+              Consumer<PrivacyModeProvider>(
+                builder: (context, privacy, _) {
+                  return SwitchListTile(
+                    secondary: Icon(
+                      privacy.isEnabled
+                          ? Icons.visibility_off
+                          : Icons.visibility_outlined,
+                      color: AppTheme.accentGreen,
+                    ),
+                    title: const Text('Modo privacidade'),
+                    subtitle: Text(
+                      privacy.isEnabled
+                          ? 'Paths e streams ocultos na tela'
+                          : 'Oculta URLs e caminhos para capturas de tela',
+                    ),
+                    value: privacy.isEnabled,
+                    onChanged: privacy.isLoaded
+                        ? (v) => privacy.setEnabled(v)
+                        : null,
+                    activeThumbColor: AppTheme.primaryGreen,
+                  );
+                },
+              ),
+            ],
+          ),
         ],
         const SizedBox(height: 16),
         _SettingsSection(
@@ -149,25 +180,12 @@ class _SignOutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFEF5350),
-          disabledForegroundColor: AppTheme.textMuted,
-          side: const BorderSide(color: Color(0xFFEF5350), width: 1.5),
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        icon: const Icon(Icons.logout, size: 22),
-        label: const Text(
-          'Sair da conta',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-        ),
-      ),
+    return AppOutlinedActionButton(
+      label: 'Sair da conta',
+      icon: Icons.logout,
+      color: const Color(0xFFEF5350),
+      isLoading: isLoading,
+      onPressed: onPressed,
     );
   }
 }

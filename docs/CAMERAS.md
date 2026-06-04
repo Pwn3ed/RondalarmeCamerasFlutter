@@ -7,8 +7,18 @@
 | Cadastrar / excluir câmera | Sim | Não |
 | Editar conexão (IP, protocolo, URL) | Sim | Não |
 | **Atribuir usuários com acesso** | Sim (na tela do usuário) | Não |
-| Ver IP, protocolo e dados técnicos | Sim | Não |
+| Ver IP, protocolo e dados técnicos | Sim (exceto modo privacidade) | Não |
 | **Ligar/desligar “Câmera pública”** | Sim | **Sim (se tiver acesso e permissão)** |
+
+## Modo privacidade (configurações)
+
+Toggle **Modo privacidade** em Configurações (somente **administrador**) oculta na interface:
+
+- URLs, paths, IP/porta e campos de conexão (cadastro/edição de câmera)
+- Painel “Informações da Câmera” no player (admin)
+- Detalhes técnicos em mensagens de erro do stream
+
+O vídeo continua reproduzindo; apenas a exibição de dados sensíveis é mascarada para permitir capturas de tela sem vazar endpoints. A preferência é salva localmente (`shared_preferences`).
 
 ## Bloqueio de visibilidade pública (cliente)
 

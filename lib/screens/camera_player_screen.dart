@@ -8,6 +8,8 @@ import '../models/camera.dart';
 import '../models/camera_protocol.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/privacy_mode_provider.dart';
+import '../utils/sensitive_data_mask.dart';
 import '../services/audit_log_service.dart';
 import '../services/camera_preview_cache_service.dart';
 import '../services/public_toggle_guard_service.dart';
@@ -39,8 +41,11 @@ class CameraPlayerScreen extends StatefulWidget {
 }
 
 class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
+  static const double _buttonZoomScale = 2.0;
+
   Player? _mediaKitPlayer;
   TransformationController? _transformationController;
+  final GlobalKey _videoViewportKey = GlobalKey();
   late Camera _camera;
   int _mediaKitViewKey = 0;
   bool _isInitialized = false;
@@ -138,6 +143,22 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
 
   String _formatMediaKitError(String raw) {
     final label = _camera.protocolLabel;
+    final privacyMode = context.read<PrivacyModeProvider>().isEnabled;
+    if (privacyMode) {
+      if (raw.contains('Connection refused') ||
+          raw.contains('Connection timed out') ||
+          raw.contains('SocketTimeout') ||
+          raw.contains('timed out')) {
+        return '$label: não foi possível conectar ao stream.';
+      }
+      if (raw.contains('Failed to recognize file format') ||
+          raw.contains('404') ||
+          raw.contains('Not Found')) {
+        return '$label: stream não encontrado ou formato não suportado.';
+      }
+      return '$label: falha na reprodução do stream.';
+    }
+
     if (raw.contains('Connection refused') ||
         raw.contains('Connection timed out') ||
         raw.contains('SocketTimeout') ||
@@ -162,7 +183,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
         raw.contains('Not Found')) {
       return '$label: stream não encontrado ou formato não suportado.';
     }
-    return '$label: $raw';
+    return '$label: ${SensitiveDataMask.sanitizeError(raw)}';
   }
 
   void _play() {
@@ -207,6 +228,34 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
 
   void _resetZoom() {
     _transformationController?.value = Matrix4.identity();
+  }
+
+  void _applyZoom() {
+    final controller = _transformationController;
+    if (controller == null) return;
+
+    final box =
+        _videoViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) {
+      controller.value = Matrix4.identity()
+        ..scaleByDouble(_buttonZoomScale, _buttonZoomScale, 1.0, 1.0);
+      return;
+    }
+
+    final size = box.size;
+    final center = Offset(size.width / 2, size.height / 2);
+    controller.value = Matrix4.identity()
+      ..translateByDouble(center.dx, center.dy, 0.0, 1.0)
+      ..scaleByDouble(_buttonZoomScale, _buttonZoomScale, 1.0, 1.0)
+      ..translateByDouble(-center.dx, -center.dy, 0.0, 1.0);
+  }
+
+  void _toggleZoom() {
+    if (_isZoomed) {
+      _resetZoom();
+    } else {
+      _applyZoom();
+    }
   }
 
   void _cancelFullscreenHint() {
@@ -340,6 +389,17 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                         ),
                       );
                       if (!context.mounted) return;
+                      if (result == editCameraDeletedResult) {
+                        Navigator.pop(context);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Câmera excluída com sucesso!'),
+                            backgroundColor: AppTheme.lightGreen,
+                          ),
+                        );
+                        return;
+                      }
                       if (result == true) {
                         final refreshed = context
                             .read<CameraProvider>()
@@ -366,16 +426,23 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
                   ),
               ],
             ),
-      body: Column(
-        children: [
-          Expanded(child: _buildVideoPlayer()),
-          if (!_isFullscreen) ...[
-            _buildPublicVisibilityPanel(),
-            _buildControls(),
-            if (widget.showSensitiveInfo) _buildCameraInfo(),
-          ] else if (_showControls)
-            _buildControls(),
-        ],
+      body: Consumer<PrivacyModeProvider>(
+        builder: (context, privacy, _) {
+          final showCameraInfo =
+              widget.showSensitiveInfo && !privacy.isEnabled;
+
+          return Column(
+            children: [
+              Expanded(child: _buildVideoPlayer()),
+              if (!_isFullscreen) ...[
+                _buildPublicVisibilityPanel(),
+                _buildControls(),
+                if (showCameraInfo) _buildCameraInfo(),
+              ] else if (_showControls)
+                _buildControls(),
+            ],
+          );
+        },
       ),
       ),
     );
@@ -425,6 +492,7 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
     }
 
     return Container(
+      key: _videoViewportKey,
       color: AppTheme.primaryBlack,
       child: GestureDetector(
         onTap: () {
@@ -544,12 +612,14 @@ class _CameraPlayerScreenState extends State<CameraPlayerScreen> {
               ),
             ),
             IconButton(
-              onPressed: _isZoomed ? _resetZoom : null,
-              tooltip: 'Resetar zoom',
+              onPressed: _toggleZoom,
+              tooltip: _isZoomed
+                  ? 'Restaurar zoom original'
+                  : 'Ampliar (use pinça na tela para ajustar)',
               icon: Icon(
-                Icons.zoom_out_map,
+                _isZoomed ? Icons.zoom_out_map : Icons.zoom_in,
                 size: 24,
-                color: _isZoomed ? AppTheme.primaryWhite : AppTheme.lightGrey,
+                color: AppTheme.primaryWhite,
               ),
             ),
             IconButton(

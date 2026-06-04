@@ -84,6 +84,6 @@ firebase deploy --only firestore:rules,firestore:indexes
 
 Abra o app, faça login com a conta admin. O menu de administração (ícone de escudo) permite:
 
-- **Usuários** — criar clientes (senha gerada automaticamente)
+- **Usuários** — criar, editar (nome, tipo, dispositivos, permissões) clientes ou outros administradores; senha gerada automaticamente na criação
 - **Sessões** — ver/revogar dispositivos conectados
 - **Logs** — auditoria de ações

@@ -28,6 +28,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     'force_change_set',
     'reset_sent',
     'user_created',
+    'user_updated',
     'user_disabled',
     'user_enabled',
     'session_revoked',

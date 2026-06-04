@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../models/user_role.dart';
 import '../../services/admin_user_service.dart';
 import '../../services/audit_log_service.dart';
 import '../../theme/app_theme.dart';
@@ -20,9 +22,12 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   final _adminUserService = AdminUserService();
   final _auditLog = AuditLogService();
 
+  UserRole _role = UserRole.user;
   int _maxDevices = 2;
   bool _isLoading = false;
   String? _createdPassword;
+
+  bool get _isCreatingAdmin => _role == UserRole.admin;
 
   @override
   void initState() {
@@ -47,11 +52,14 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   Future<void> _createUser() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final roleLabel = _isCreatingAdmin ? 'administrador' : 'cliente';
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar criação'),
-        content: const Text(
+        content: Text(
+          'Será criada uma conta de $roleLabel.\n\n'
           'Anote a senha temporária antes de continuar. '
           'Ela não poderá ser visualizada novamente após criar a conta.',
         ),
@@ -73,10 +81,11 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await _adminUserService.createClient(
+      final result = await _adminUserService.createUser(
         email: _emailController.text.trim(),
         displayName: _displayNameController.text.trim(),
-        maxDevices: _maxDevices,
+        role: _role,
+        maxDevices: _isCreatingAdmin ? 5 : _maxDevices,
       );
 
       await _auditLog.log(
@@ -84,7 +93,8 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
         targetUid: result.uid,
         metadata: {
           'email': _emailController.text.trim(),
-          'maxDevices': _maxDevices,
+          'role': _role.storageValue,
+          'maxDevices': _isCreatingAdmin ? 5 : _maxDevices,
         },
       );
 
@@ -132,6 +142,41 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
               },
             ),
             const SizedBox(height: 16),
+            Text(
+              'Tipo de conta',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<UserRole>(
+              segments: const [
+                ButtonSegment(
+                  value: UserRole.user,
+                  label: Text('Cliente'),
+                  icon: Icon(Icons.person_outline),
+                ),
+                ButtonSegment(
+                  value: UserRole.admin,
+                  label: Text('Administrador'),
+                  icon: Icon(Icons.admin_panel_settings_outlined),
+                ),
+              ],
+              selected: {_role},
+              onSelectionChanged: (selection) {
+                setState(() => _role = selection.first);
+              },
+            ),
+            if (_isCreatingAdmin) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Administradores têm acesso ao painel de gestão, câmeras e usuários.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textMuted,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
             TextFormField(
               controller: _displayNameController,
               decoration: const InputDecoration(
@@ -172,23 +217,25 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
-              value: _maxDevices,
-              decoration: const InputDecoration(
-                labelText: 'Máximo de dispositivos simultâneos',
-                prefixIcon: Icon(Icons.devices),
+            if (!_isCreatingAdmin) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: _maxDevices,
+                decoration: const InputDecoration(
+                  labelText: 'Máximo de dispositivos simultâneos',
+                  prefixIcon: Icon(Icons.devices),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('1 dispositivo')),
+                  DropdownMenuItem(value: 2, child: Text('2 dispositivos')),
+                  DropdownMenuItem(value: 3, child: Text('3 dispositivos')),
+                  DropdownMenuItem(value: 5, child: Text('5 dispositivos')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _maxDevices = v);
+                },
               ),
-              items: const [
-                DropdownMenuItem(value: 1, child: Text('1 dispositivo')),
-                DropdownMenuItem(value: 2, child: Text('2 dispositivos')),
-                DropdownMenuItem(value: 3, child: Text('3 dispositivos')),
-                DropdownMenuItem(value: 5, child: Text('5 dispositivos')),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _maxDevices = v);
-              },
-            ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _createUser,
@@ -235,7 +282,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Anote a senha temporária abaixo. O cliente precisará trocá-la no primeiro acesso.',
+              _isCreatingAdmin
+                  ? 'Anote a senha temporária abaixo. O administrador precisará trocá-la no primeiro acesso.'
+                  : 'Anote a senha temporária abaixo. O cliente precisará trocá-la no primeiro acesso.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

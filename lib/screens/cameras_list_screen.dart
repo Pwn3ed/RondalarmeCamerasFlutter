@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import '../models/camera.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/privacy_mode_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/camera_permissions.dart';
 import '../widgets/app_shell_header.dart';
 import '../widgets/camera_grid_card.dart';
 import 'add_camera_screen.dart';
 import 'camera_player_screen.dart';
-import 'edit_camera_screen.dart';
 import 'public_cameras_screen.dart';
 import 'settings_screen.dart';
 
@@ -155,14 +155,13 @@ class _MyCamerasTab extends StatelessWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: isAdmin ? 0.68 : 0.82,
+                    childAspectRatio: 0.82,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final camera = cameraProvider.cameras[index];
                     return _MyCameraGridCard(
                       camera: camera,
                       isAdmin: isAdmin,
-                      cameraProvider: cameraProvider,
                     );
                   }, childCount: cameraProvider.cameras.length),
                 ),
@@ -178,16 +177,15 @@ class _MyCamerasTab extends StatelessWidget {
 class _MyCameraGridCard extends StatelessWidget {
   final Camera camera;
   final bool isAdmin;
-  final CameraProvider cameraProvider;
 
   const _MyCameraGridCard({
     required this.camera,
     required this.isAdmin,
-    required this.cameraProvider,
   });
 
   void _openPlayer(BuildContext context) {
     final auth = context.read<AuthProvider>();
+    final privacyMode = context.read<PrivacyModeProvider>().isEnabled;
     final showPanel = shouldShowPublicVisibilityPanel(camera, auth);
     Navigator.push(
       context,
@@ -200,76 +198,9 @@ class _MyCameraGridCard extends StatelessWidget {
           publicToggleBlockedMessage: showPanel
               ? publicToggleBlockedMessage(auth.appUser)
               : null,
-          showSensitiveInfo: isAdmin,
+          showSensitiveInfo: isAdmin && !privacyMode,
         ),
       ),
-    );
-  }
-
-  Future<void> _edit(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditCameraScreen(camera: camera),
-      ),
-    );
-    if (!context.mounted) return;
-    if (result == true) {
-      await cameraProvider.loadCameras();
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Câmera atualizada com sucesso!'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
-    }
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Excluir câmera'),
-          content: Text(
-            'Tem certeza que deseja excluir a câmera "${camera.name}"?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                try {
-                  await cameraProvider.deleteCamera(camera.id);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Câmera excluída com sucesso!'),
-                      backgroundColor: AppTheme.primaryGreen,
-                    ),
-                  );
-                } catch (_) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Erro ao excluir câmera'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                'Excluir',
-                style: TextStyle(color: Color(0xFFEF5350)),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -277,10 +208,7 @@ class _MyCameraGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return CameraGridCard(
       camera: camera,
-      isAdmin: isAdmin,
       onTap: () => _openPlayer(context),
-      onEdit: isAdmin ? () => _edit(context) : null,
-      onDelete: isAdmin ? () => _confirmDelete(context) : null,
     );
   }
 }
