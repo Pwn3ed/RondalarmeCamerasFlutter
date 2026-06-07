@@ -55,6 +55,10 @@ Câmeras sem usuário ficam visíveis só para o admin até serem atribuídas na
 2. Tocar na câmera para abrir o player.
 3. Usar o painel **Câmera pública** (toggle + Saber mais) para privacidade.
 
+## TV na sede (VMS)
+
+Quando o sync Firestore está ativo no projeto **rondalarme-vms** (`docs/sync-cameras-publicas.md`), marcar **câmera pública** no app faz a câmera aparecer na TV (`/player`) em até ~30s; desmarcar remove da grade. Requisito: `streamPath` no cadastro no formato `app/{slug}` (ex.: `app/deni1`), alinhado ao path RTMP/MediaMTX.
+
 ## Miniatura na grid
 
 - Ao assistir uma câmera no player, o app salva **localmente** um JPEG (último frame).
